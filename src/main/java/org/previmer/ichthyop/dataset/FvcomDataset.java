@@ -252,7 +252,7 @@ public class FvcomDataset extends AbstractDataset {
         // Return z[grid] corresponding to depth[meters]
         double z;
         int lk = nLayer;
-        while ((lk >= 0) && (getDepth(x, y, lk) < depth)) {
+        while ((lk > 0) && (getDepth(x, y, lk) < depth)) {
             lk--;
         }
         if ((lk ==0) || (lk == nLayer)) {
