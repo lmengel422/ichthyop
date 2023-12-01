@@ -67,7 +67,7 @@ public class RequiredVariable {
     private boolean isUnlimited;
     private List<Class<?>> requiredByList;
 
-    private FvcomDataset fvcom;
+    private DelftDataset fvcom;
 
     private interface Getter {
         public Number get(double[] pGrid, double time);
@@ -78,8 +78,8 @@ public class RequiredVariable {
     public RequiredVariable(String name, Class<?> requiredBy) {
         this.name = name;
         this.dataset = SimulationManager.getInstance().getDataset();
-        if(this.dataset instanceof FvcomDataset) {
-            fvcom = (FvcomDataset) this.dataset;
+        if(this.dataset instanceof DelftDataset) {
+            fvcom = (DelftDataset) this.dataset;
             getter = (pGrid, time) -> getFVCOM(pGrid, time);
         } else {
             getter = (pGrid, time) -> getStandard(pGrid, time);

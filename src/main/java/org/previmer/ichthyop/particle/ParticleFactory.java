@@ -45,7 +45,7 @@
 package org.previmer.ichthyop.particle;
 
 import org.previmer.ichthyop.*;
-import org.previmer.ichthyop.dataset.FvcomDataset;
+import org.previmer.ichthyop.dataset.DelftDataset;
 
 /**
  *
@@ -132,7 +132,7 @@ public class ParticleFactory extends SimulationManagerAccessor {
             return null;
         }
 
-        if (!(getSimulationManager().getDataset() instanceof FvcomDataset)) {
+        if (!(getSimulationManager().getDataset() instanceof DelftDataset)) {
             if (!Double.isNaN(depth)) {
                 if (getSimulationManager().getDataset().z2depth(particle.getX(), particle.getY(), 0) > depth
                         || depth > 0) {

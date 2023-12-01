@@ -72,7 +72,7 @@ import java.util.List;
 
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.previmer.ichthyop.Zone;
-import org.previmer.ichthyop.dataset.FvcomDataset;
+import org.previmer.ichthyop.dataset.DelftDataset;
 import org.previmer.ichthyop.dataset.IDataset;
 import org.previmer.ichthyop.event.NextStepListener;
 import org.previmer.ichthyop.io.AbstractTracker;
@@ -645,7 +645,7 @@ public class OutputManager extends AbstractManager implements LastStepListener, 
         IDataset dataset = getSimulationManager().getDataset();
 
         // if no fvcom output, write zone in file
-        if(!(dataset instanceof FvcomDataset)) {
+        if(!(dataset instanceof DelftDataset)) {
             addRegion();
         }
 
@@ -802,7 +802,7 @@ public class OutputManager extends AbstractManager implements LastStepListener, 
         // zones requires that dataset has been initialized first.
         // if FvcomDataset, no writting of Zones in Netcdf
         IDataset dataset = getSimulationManager().getDataset();
-        if (!(dataset instanceof FvcomDataset)) {
+        if (!(dataset instanceof DelftDataset)) {
             addZones();
         }
 
