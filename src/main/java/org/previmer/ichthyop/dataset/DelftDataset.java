@@ -120,6 +120,7 @@ public class DelftDataset extends AbstractDataset {
     private String strNodes;
     private String strXVarName;
     private String strYVarName;
+    private String strZVarName;
     private String strU;
     private String strV;
     private String strW;
@@ -639,6 +640,7 @@ public class DelftDataset extends AbstractDataset {
 
         strXVarName = getParameter("field_var_x");
         strYVarName = getParameter("field_var_y");
+        strZVarName = getParameter("field_var_z");
 
         strA1U = getParameter("field_var_a1u");
         strA2U = getParameter("field_var_a2u");
