@@ -736,7 +736,7 @@ public class DelftDataset extends AbstractDataset {
         for (int i = 0; i < nTriangles; i++) {
             array[i] = new float[n];
             for (int j = 0; j < n; j++) {
-                index.set(j, i);
+                index.set(i, j);
                 array[i][j] = variable.getFloat(index);
             }
         }
@@ -774,8 +774,8 @@ public class DelftDataset extends AbstractDataset {
             }
         }
 
-        a1u = this.read_variable(this.strA1U, 4);
-        a2u = this.read_variable(this.strA2U, 4);
+        a1u = this.read_variable(this.strA1U, 3);
+        a2u = this.read_variable(this.strA2U, 3);
         aw0 = this.read_variable(this.strAW0, 3);
         awx = this.read_variable(this.strAWY, 3);
         awy = this.read_variable(this.strAWX, 3);
@@ -808,9 +808,9 @@ public class DelftDataset extends AbstractDataset {
 
         // Reading of the sigma array on Z levels
         Array sigArray = ncIn.findVariable(strSigma).read().reduce();
-        sigma = new double[this.nLayer + 1];
+        sigma = new double[this.nLayer];
         index = sigArray.getIndex();
-        for (int k = 0; k < this.nLayer + 1; k++) {
+        for (int k = 0; k < this.nLayer; k++) {
             index.set(k);
             sigma[k] = sigArray.getDouble(index);
         }
@@ -1073,7 +1073,7 @@ public class DelftDataset extends AbstractDataset {
         double time_tp0 = time_tp1;
 
         try {
-            u_tp1 = ncIn.findVariable(strU).read(origin, new int[] { 1, this.nLayer, this.nTriangles }).reduce();
+            u_tp1 = ncIn.findVariable(strU).read(origin, new int[] { 1, this.nTriangles, this.nLayer}).reduce();
         } catch (IOException | InvalidRangeException ex) {
             IOException ioex = new IOException("Error reading U velocity variable. " + ex.toString());
             ioex.setStackTrace(ex.getStackTrace());
@@ -1081,7 +1081,7 @@ public class DelftDataset extends AbstractDataset {
         }
 
         try {
-            v_tp1 = ncIn.findVariable(strV).read(origin, new int[] { 1, this.nLayer, this.nTriangles }).reduce();
+            v_tp1 = ncIn.findVariable(strV).read(origin, new int[] { 1, this.nTriangles, this.nLayer }).reduce();
         } catch (IOException | InvalidRangeException ex) {
             IOException ioex = new IOException("Error reading V velocity variable. " + ex.toString());
             ioex.setStackTrace(ex.getStackTrace());
@@ -1089,7 +1089,7 @@ public class DelftDataset extends AbstractDataset {
         }
 
         try {
-            w_tp1 = ncIn.findVariable(strW).read(origin, new int[] { 1, this.nLayer, this.nTriangles }).reduce();
+            w_tp1 = ncIn.findVariable(strW).read(origin, new int[] { 1, this.nTriangles, this.nLayer }).reduce();
         } catch (IOException | InvalidRangeException ex) {
             IOException ioex = new IOException("Error reading W velocity variable. " + ex.toString());
             ioex.setStackTrace(ex.getStackTrace());
@@ -1099,7 +1099,7 @@ public class DelftDataset extends AbstractDataset {
         try {
             zeta_tp1 = ncIn.findVariable(strZeta).read(origin, new int[] { 1, this.nNodes }).reduce();
         } catch (IOException | InvalidRangeException ex) {
-            IOException ioex = new IOException("Error reading V velocity variable. " + ex.toString());
+            IOException ioex = new IOException("Error reading zeta velocity variable. " + ex.toString());
             ioex.setStackTrace(ex.getStackTrace());
             throw ioex;
         }
@@ -1113,12 +1113,12 @@ public class DelftDataset extends AbstractDataset {
         }
 
         // Computation of derivatives
-        dudx_1 = this.compute_du_dx(u_tp1, a1u);
-        dvdx_1 = this.compute_du_dx(v_tp1, a1u);
-        dwdx_1 = this.compute_du_dx(w_tp1, a1u);
-        dudy_1 = this.compute_du_dx(u_tp1, a2u);
-        dvdy_1 = this.compute_du_dx(v_tp1, a2u);
-        dwdy_1 = this.compute_du_dx(w_tp1, a2u);
+    //    dudx_1 = this.compute_du_dx(u_tp1, a1u);
+     //   dvdx_1 = this.compute_du_dx(v_tp1, a1u);
+      //  dwdx_1 = this.compute_du_dx(w_tp1, a1u);
+       // dudy_1 = this.compute_du_dx(u_tp1, a2u);
+        //dvdy_1 = this.compute_du_dx(v_tp1, a2u);
+        //dwdy_1 = this.compute_du_dx(w_tp1, a2u);
 
         dt_HyMo = Math.abs(time_tp1 - time_tp0);
 
