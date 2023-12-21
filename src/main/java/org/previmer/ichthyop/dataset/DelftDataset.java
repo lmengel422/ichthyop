@@ -120,14 +120,10 @@ public class DelftDataset extends AbstractDataset {
     private String strNodes;
     private String strXVarName;
     private String strYVarName;
-    private String strZVarName;
     private String strU;
     private String strV;
     private String strW;
-    private String strsigzLayer;
-    private String strsigzInter;
     private String strSigma;
-    private String strSigDepth;
     private String strBathy;
     private String strBathyTriangle;
     private String strZeta;
@@ -136,9 +132,7 @@ public class DelftDataset extends AbstractDataset {
     private String strA1U, strA2U;
     private String strAW0, strAWX, strAWY;
     private String stringLayerDim;
-    private String stringInterDim;
     private int nLayer;
-    private int nInterface;
     private int indexFile;
     private float cflThreshold;
 
@@ -641,12 +635,10 @@ public class DelftDataset extends AbstractDataset {
         strNodesDim = getParameter("field_dim_nodes");
         strTimeDim = getParameter("field_dim_time");
         stringLayerDim = getParameter("field_dim_layer");
-        stringInterDim = getParameter("field_dim_interface");
         strTime = getParameter("field_var_time");
 
         strXVarName = getParameter("field_var_x");
         strYVarName = getParameter("field_var_y");
-        strZVarName = getParameter("field_var_z");
 
         strA1U = getParameter("field_var_a1u");
         strA2U = getParameter("field_var_a2u");
@@ -659,10 +651,7 @@ public class DelftDataset extends AbstractDataset {
         strW = getParameter("field_var_w");
         strZeta = getParameter("field_var_zeta");
 
-        strsigzLayer = getParameter("field_var_sig_z_layer");
-        strsigzInter = getParameter("field_var_sig_z_interface");
         strSigma = getParameter("field_var_sigma");
-        strSigDepth = getParameter("field_var_sig_depth");
         strBathy = getParameter("field_var_bathy");
         strBathyTriangle = getParameter("field_var_bathy_triangle");
 
@@ -707,13 +696,6 @@ public class DelftDataset extends AbstractDataset {
         }
         try {
             this.nLayer = ncIn.findDimension(this.stringLayerDim).getLength();
-        } catch (Exception ex) {
-            IOException ioex = new IOException("Error reading dataset Z dimension. " + ex.toString());
-            ioex.setStackTrace(ex.getStackTrace());
-            throw ioex;
-        }
-        try {
-            this.nInterface = ncIn.findDimension(this.stringInterDim).getLength();
         } catch (Exception ex) {
             IOException ioex = new IOException("Error reading dataset Z dimension. " + ex.toString());
             ioex.setStackTrace(ex.getStackTrace());
