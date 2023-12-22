@@ -303,10 +303,10 @@ public class DelftDataset extends AbstractDataset {
         int kz = (int) Math.max(0, Math.floor(z - 0.5));
         double dist = 1;
 
-        index0.set(kz, iTriangle);
-        index1.set(kz, iTriangle);
-        double output_0_kz = array_tp0.getDouble(index0) + dx_0[kz][iTriangle] * dX + dy_0[kz][iTriangle] * dY;
-        double output_1_kz = array_tp1.getDouble(index0) + dx_1[kz][iTriangle] * dX + dy_1[kz][iTriangle] * dY;
+        index0.set(iTriangle, kz);
+        index1.set(iTriangle, kz);
+        double output_0_kz = array_tp0.getDouble(index0) + dx_0[iTriangle][kz] * dX + dy_0[iTriangle][kz] * dY;
+        double output_1_kz = array_tp1.getDouble(index0) + dx_1[iTriangle][kz] * dX + dy_1[iTriangle][kz] * dY;
 
         // getting the value at the T-cell below the particle
 
@@ -316,10 +316,10 @@ public class DelftDataset extends AbstractDataset {
         if (z >= 0.5 && z <= nLayer - 1 + 0.5) {
             // if the depth of the particle is between two T layers, we recover the value
             // at the T layer which is below
-            index0.set(kz + 1, iTriangle);
-            index1.set(kz + 1, iTriangle);
-            output_0_kzp1 = array_tp0.getDouble(index0) + dx_0[kz + 1][iTriangle] * dX + dy_0[kz + 1][iTriangle] * dY;
-            output_1_kzp1 = array_tp1.getDouble(index0) + dx_1[kz + 1][iTriangle] * dX + dy_1[kz + 1][iTriangle] * dY;
+            index0.set(iTriangle, kz + 1);
+            index1.set(iTriangle, kz + 1);
+            output_0_kzp1 = array_tp0.getDouble(index0) + dx_0[iTriangle][kz + 1] * dX + dy_0[iTriangle][kz + 1] * dY;
+            output_1_kzp1 = array_tp1.getDouble(index0) + dx_1[iTriangle][kz + 1] * dX + dy_1[iTriangle][kz + 1] * dY;
             dist = 1 - (z - (kz + 0.5));
         }
 
