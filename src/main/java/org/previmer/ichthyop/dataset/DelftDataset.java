@@ -785,9 +785,9 @@ public class DelftDataset extends AbstractDataset {
 
         // Reading of the sigma array on Z levels
         Array sigArray = ncIn.findVariable(strSigma).read().reduce();
-        sigma = new double[this.nLayer];
+        sigma = new double[this.nLayer + 1];
         index = sigArray.getIndex();
-        for (int k = 0; k < this.nLayer; k++) {
+        for (int k = 0; k < this.nLayer + 1; k++) {
             index.set(k);
             sigma[k] = sigArray.getDouble(index);
         }
