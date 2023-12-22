@@ -129,8 +129,6 @@ public class DelftDataset extends AbstractDataset {
     private String strZeta;
     private String strTime;
     private String strTimeDim;
-    private String strA1U, strA2U;
-    private String strAW0, strAWX, strAWY;
     private String stringLayerDim;
     private int nLayer;
     private int indexFile;
@@ -175,13 +173,6 @@ public class DelftDataset extends AbstractDataset {
     private HashMap<String, double[][]> tracer0;
     private HashMap<String, double[][]> dTdX;
     private HashMap<String, double[][]> dTdY;
-
-    /**
-     * Scale factors used for interpolation of tracer/velocities. Dimensions are
-     * [nEle, 4 or 3] depending on the variables. They are transposed compared to
-     * the way they are stored in the NetCDF.
-     */
-    private float[][] a1u, a2u, aw0, awx, awy;
 
     /*
      * Sets up the {@code Dataset}. The method first sets the appropriate variable
@@ -640,12 +631,6 @@ public class DelftDataset extends AbstractDataset {
         strXVarName = getParameter("field_var_x");
         strYVarName = getParameter("field_var_y");
 
-        strA1U = getParameter("field_var_a1u");
-        strA2U = getParameter("field_var_a2u");
-        strAW0 = getParameter("field_var_aw0");
-        strAWX = getParameter("field_var_awx");
-        strAWY = getParameter("field_var_awy");
-
         strU = getParameter("field_var_u");
         strV = getParameter("field_var_v");
         strW = getParameter("field_var_w");
@@ -772,12 +757,6 @@ public class DelftDataset extends AbstractDataset {
             }
         }
 
-        a1u = this.read_variable(this.strA1U, 3);
-        a2u = this.read_variable(this.strA2U, 3);
-        aw0 = this.read_variable(this.strAW0, 3);
-        awx = this.read_variable(this.strAWY, 3);
-        awy = this.read_variable(this.strAWX, 3);
-
         xNodes = this.read_coordinates(this.strXVarName);
         yNodes = this.read_coordinates(this.strYVarName);
 
@@ -790,9 +769,9 @@ public class DelftDataset extends AbstractDataset {
 
         // reads the bathymetry on the nodes (as the coordinates)
         Array HArray = ncIn.findVariable(strBathy).read();
-        this.dHdx = this.compute_dzeta_dx(HArray, awx);
-        this.dHdy = this.compute_dzeta_dx(HArray, awy);
-        this.H0 = this.compute_dzeta_dx(HArray, aw0);
+        this.dHdx = this.compute_dzeta_dx(HArray);
+        this.dHdy = this.compute_dzeta_dx(HArray);
+        this.H0 = this.compute_dzeta_dx(HArray);
 
         Index index;
 
@@ -1020,28 +999,26 @@ public class DelftDataset extends AbstractDataset {
         return (isInPolygone);
     }
 
-    private double[][] compute_du_dx(Array u, float[][] a1) {
+    private double[][] compute_du_dx(Array u) {
 
-        double[][] du_dx = new double[this.nLayer][this.nTriangles];
+        double[][] du_dx = new double[this.nTriangles][this.nLayer];
         Index index = u.getIndex();
 
         for (int i = 0; i < nTriangles; i++) {
             for (int l = 0; l < this.nLayer; l++) {
 
-                index.set(l, i);
+                index.set(i, l);
 
-                // get the composant for the given triangle
-                // a1u(E0, 1) * u(E0, Li) in equation
-                du_dx[l][i] += a1u[i][0] * u.getDouble(index);
+                du_dx[i][l] += u.getDouble(index);
 
                 // we loop over the neighbours
-                // a1u(E0, 2) * u(E1, Li) + a1u(E0, 3) * u(E2, Li) + a1u(E0, 4) * u(E3, Li) in
+                // u(E1, Li) + u(E2, Li) + u(E3, Li) in
                 // equation
                 for (int n = 0; n < 3; n++) {
                     int neighbour = this.neighbouringTriangles[i][n];
                     if (neighbour >= 0) {
-                        index.set(l, neighbour);
-                        du_dx[l][i] += a1[i][n] * u.getDouble(index);
+                        index.set(neighbour, l);
+                        du_dx[i][l] += u.getDouble(index);
                     }
                 }
             }
@@ -1111,26 +1088,26 @@ public class DelftDataset extends AbstractDataset {
         }
 
         // Computation of derivatives
-    //    dudx_1 = this.compute_du_dx(u_tp1, a1u);
-     //   dvdx_1 = this.compute_du_dx(v_tp1, a1u);
-      //  dwdx_1 = this.compute_du_dx(w_tp1, a1u);
-       // dudy_1 = this.compute_du_dx(u_tp1, a2u);
-        //dvdy_1 = this.compute_du_dx(v_tp1, a2u);
-        //dwdy_1 = this.compute_du_dx(w_tp1, a2u);
+        dudx_1 = this.compute_du_dx(u_tp1);
+        dvdx_1 = this.compute_du_dx(v_tp1);
+        dwdx_1 = this.compute_du_dx(w_tp1);
+        dudy_1 = this.compute_du_dx(u_tp1);
+        dvdy_1 = this.compute_du_dx(v_tp1);
+        dwdy_1 = this.compute_du_dx(w_tp1);
 
         dt_HyMo = Math.abs(time_tp1 - time_tp0);
 
         for (String name : this.getRequiredVariables().keySet()) {
             Array tracer = ncIn.findVariable(name).read(origin, new int[] { 1, this.nLayer, this.nNodes }).reduce();
-            this.tracer0_1.put(name, this.compute_dt_dx(tracer, aw0));
-            this.dTdX_1.put(name, this.compute_dt_dx(tracer, awx));
-            this.dTdY_1.put(name, this.compute_dt_dx(tracer, awy));
+            this.tracer0_1.put(name, this.compute_dt_dx(tracer));
+            this.dTdX_1.put(name, this.compute_dt_dx(tracer));
+            this.dTdY_1.put(name, this.compute_dt_dx(tracer));
         }
 
         // Update the computation of the zeta derivatives used for interpolation
-        this.dzetadx_1 = this.compute_dzeta_dx(zeta_tp1, awx);
-        this.dzetady_1 = this.compute_dzeta_dx(zeta_tp1, awy);
-        this.zeta0_1 = this.compute_dzeta_dx(zeta_tp1, aw0);
+        this.dzetadx_1 = this.compute_dzeta_dx(zeta_tp1);
+        this.dzetady_1 = this.compute_dzeta_dx(zeta_tp1);
+        this.zeta0_1 = this.compute_dzeta_dx(zeta_tp1);
 
     }
 
@@ -1143,22 +1120,22 @@ public class DelftDataset extends AbstractDataset {
      * Compute the differente variables used for the interpolation. If aw = aw0,
      * returns T0 If aw = awx, returns dT/dX If aw = awy, returns dT/dY
      */
-    private double[][] compute_dt_dx(Array tracer, float[][] aw) {
+    private double[][] compute_dt_dx(Array tracer) {
 
-        double[][] dt_dx = new double[this.nLayer][this.nTriangles];
+        double[][] dt_dx = new double[this.nTriangles][this.nLayer];
         Index index = tracer.getIndex();
 
         for (int i = 0; i < nTriangles; i++) {
             for (int l = 0; l < this.nLayer; l++) {
 
                 // we loop over the neighbours
-                // a1u(E0, 2) * u(E1, Li) + a1u(E0, 3) * u(E2, Li) + a1u(E0, 4) * u(E3, Li) in
+                //  u(E1, Li) +  u(E2, Li) +  u(E3, Li) in
                 // equation
                 for (int n = 0; n < 3; n++) {
                     int neighbour = this.triangleNodes[i][n];
                     if (neighbour >= 0) {
                         index.set(l, neighbour);
-                        dt_dx[l][i] += aw[i][n] * tracer.getDouble(index);
+                        dt_dx[i][l] += tracer.getDouble(index);
                     }
                 }
             }
@@ -1172,20 +1149,20 @@ public class DelftDataset extends AbstractDataset {
      * Compute the different variables used for the interpolation. If aw = aw0,
      * returns T0 If aw = awx, returns dT/dX If aw = awy, returns dT/dY
      */
-    private double[] compute_dzeta_dx(Array tracer, float[][] aw) {
+    private double[] compute_dzeta_dx(Array tracer) {
 
         double[] dt_dx = new double[this.nTriangles];
         Index index = tracer.getIndex();
 
         for (int i = 0; i < nTriangles; i++) {
             // we loop over the neighbours
-            // a1u(E0, 2) * u(E1, Li) + a1u(E0, 3) * u(E2, Li) + a1u(E0, 4) * u(E3, Li) in
+            // u(E1, Li) + u(E2, Li) +  u(E3, Li) in
             // equation
             for (int n = 0; n < 3; n++) {
                 int neighbour = this.triangleNodes[i][n];
                 if (neighbour >= 0) {
                     index.set(neighbour);
-                    dt_dx[i] += aw[i][n] * tracer.getDouble(index);
+                    dt_dx[i] += tracer.getDouble(index);
                 }
             }
         }
