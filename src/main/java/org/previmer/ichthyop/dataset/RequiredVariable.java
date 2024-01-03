@@ -67,7 +67,7 @@ public class RequiredVariable {
     private boolean isUnlimited;
     private List<Class<?>> requiredByList;
 
-    private DelftDataset fvcom;
+    private DelftDataset delft;
 
     private interface Getter {
         public Number get(double[] pGrid, double time);
@@ -79,8 +79,8 @@ public class RequiredVariable {
         this.name = name;
         this.dataset = SimulationManager.getInstance().getDataset();
         if(this.dataset instanceof DelftDataset) {
-            fvcom = (DelftDataset) this.dataset;
-            getter = (pGrid, time) -> getFVCOM(pGrid, time);
+            delft = (DelftDataset) this.dataset;
+            getter = (pGrid, time) -> getDELFT(pGrid, time);
         } else {
             getter = (pGrid, time) -> getStandard(pGrid, time);
         }
@@ -147,30 +147,30 @@ public class RequiredVariable {
         this.array_tp1 = array_tp1;
     }
 
-    public Number getFVCOM(double[] pGrid, double time) {
+    public Number getDELFT(double[] pGrid, double time) {
 
          // getting the value at the T-cell to which the particle belongs
          double z = pGrid[2];
          int kz = (int) Math.floor(z);
          double dist = 1;
 
-        double[][] tracer_0 = fvcom.getTracer0(name);
-        double[][] dT_dX = fvcom.getDtDx(name);
-        double[][] dT_dY = fvcom.getDtDy(name);
+        double[][] tracer_0 = delft.getTracer0(name);
+        double[][] dT_dX = delft.getDtDx(name);
+        double[][] dT_dY = delft.getDtDy(name);
 
-        int iTriangle = fvcom.findTriangle(pGrid);
-        double xB = fvcom.getXBarycenter(iTriangle);
-        double yB = fvcom.getYBarycenter(iTriangle);
+        int iTriangle = delft.findTriangle(pGrid);
+        double xB = delft.getXBarycenter(iTriangle);
+        double yB = delft.getYBarycenter(iTriangle);
         double dX = pGrid[0] - xB;
         double dY = pGrid[1] - yB;
 
-        double output_kz = tracer_0[kz][iTriangle] + dT_dX[kz][iTriangle] * dX + dT_dY[kz][iTriangle] * dY;
+        double output_kz = tracer_0[iTriangle][kz] + dT_dX[iTriangle][kz] * dX + dT_dY[iTriangle][kz] * dY;
         double output_kzp1 = 0;
 
-        if (z >= 0.5 || z <= fvcom.getNLayer() + 0.5) {
+        if (z >= 0.5 || z <= delft.getNLayer() + 0.5) {
             // if the depth of the particle is between two T layers, we recover the value
             // at the T layer which is below
-            output_kzp1 = tracer_0[kz + 1][iTriangle] + dT_dX[kz + 1][iTriangle] * dX + dT_dY[kz + 1][iTriangle] * dY;
+            output_kzp1 = tracer_0[iTriangle][kz + 1] + dT_dX[iTriangle][kz + 1] * dX + dT_dY[iTriangle][kz + 1] * dY;
             dist = kz + 0.5 - z;
         }
 
