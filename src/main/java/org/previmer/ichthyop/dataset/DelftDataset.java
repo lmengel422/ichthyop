@@ -219,8 +219,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     /**
-     * In FVCOM, everything runs in projected coordinates. So X/Y and lon/lat are
-     * the same
+     * In DELFT, everything runs in lat/lon.
      */
     @Override
     public double[] latlon2xy(double lat, double lon) {
@@ -228,8 +227,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     /**
-     * In FVCOM, everything runs in projected coordinates. So X/Y and lon/lat are
-     * the same
+     * In DELFT, everything runs in lat/lon.
      */
     @Override
     public double[] xy2latlon(double xRho, double yRho) {
