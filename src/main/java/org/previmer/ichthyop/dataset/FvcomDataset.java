@@ -1195,7 +1195,7 @@ public class FvcomDataset extends AbstractDataset {
     }
 
     public double[][] getTracer0(String name) {
-        return tracer0.get(name);
+        return this.tracer0.get(name);
     }
 
     public double[][] getDtDx(String name) {
@@ -1233,6 +1233,8 @@ public class FvcomDataset extends AbstractDataset {
         }
 
         double[][] output = new double[this.nLayer][this.nNodes];
+        double[][] output1 = new double[this.nLayer][this.nNodes];
+        double[][] output2 = new double[this.nLayer][this.nNodes];
         for (String name : this.requiredVariables.keySet()) {
             double[][] temp0 = this.tracer0_0.get(name);
             double[][] temp1 = this.tracer0_1.get(name);
@@ -1247,19 +1249,19 @@ public class FvcomDataset extends AbstractDataset {
             temp1 = this.dTdX_1.get(name);
             for (int l = 0; l < this.nLayer; l++) {
                 for (int n = 0; n < this.nNodes; n++) {
-                    output[l][n] = (1.d - x_euler) * temp0[l][n] + x_euler * temp1[l][n];
+                    output1[l][n] = (1.d - x_euler) * temp0[l][n] + x_euler * temp1[l][n];
                 }
             }
-            this.dTdX.put(name, output);
+            this.dTdX.put(name, output1);
 
             temp0 = this.dTdY_0.get(name);
             temp1 = this.dTdY_1.get(name);
             for (int l = 0; l < this.nLayer; l++) {
                 for (int n = 0; n < this.nNodes; n++) {
-                    output[l][n] = (1.d - x_euler) * temp0[l][n] + x_euler * temp1[l][n];
+                    output2[l][n] = (1.d - x_euler) * temp0[l][n] + x_euler * temp1[l][n];
                 }
             }
-            this.dTdY.put(name, output);
+            this.dTdY.put(name, output2);
         }
     }
 
