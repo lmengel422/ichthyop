@@ -170,7 +170,7 @@ public class RequiredVariable {
         if (z >= 0.5 || z <= fvcom.getNLayer() + 0.5) {
             // if the depth of the particle is between two T layers, we recover the value
             // at the T layer which is below
-            output_kzp1 = tracer_0[kz + 1][iTriangle] + dT_dX[kz + 1][iTriangle] * dX + dT_dY[kz + 1][iTriangle] * dY;
+            output_kzp1 = tracer_0[kz][iTriangle] + dT_dX[kz][iTriangle] * dX + dT_dY[kz][iTriangle] * dY;
             dist = kz + 0.5 - z;
         }
 
