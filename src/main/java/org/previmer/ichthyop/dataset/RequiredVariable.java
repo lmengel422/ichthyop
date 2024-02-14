@@ -159,18 +159,20 @@ public class RequiredVariable {
         double[][] dT_dY = fvcom.getDtDy(name);
 
         int iTriangle = fvcom.findTriangle(pGrid);
+        int iNode = fvcom.findNearestNode(pGrid);
+
         double xB = fvcom.getXBarycenter(iTriangle);
         double yB = fvcom.getYBarycenter(iTriangle);
         double dX = pGrid[0] - xB;
         double dY = pGrid[1] - yB;
 
-        double output_kz = tracer_0[kz][iTriangle] + dT_dX[kz][iTriangle] * dX + dT_dY[kz][iTriangle] * dY;
+        double output_kz = tracer_0[kz][iNode] + dT_dX[kz][iNode] * dX + dT_dY[kz][iNode] * dY;
         double output_kzp1 = 0;
 
         if (z >= 0.5 || z <= fvcom.getNLayer() + 0.5) {
             // if the depth of the particle is between two T layers, we recover the value
             // at the T layer which is below
-            output_kzp1 = tracer_0[kz][iTriangle] + dT_dX[kz][iTriangle] * dX + dT_dY[kz][iTriangle] * dY;
+            output_kzp1 = tracer_0[kz][iNode] + dT_dX[kz][iNode] * dX + dT_dY[kz][iNode] * dY;
             dist = kz + 0.5 - z;
         }
 

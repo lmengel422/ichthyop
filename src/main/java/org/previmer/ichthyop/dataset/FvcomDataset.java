@@ -953,6 +953,31 @@ public class FvcomDataset extends AbstractDataset {
 
     }
 
+    public int findNearestNode(double[] pGrid) {
+        double x = pGrid[0];
+        double y = pGrid[1];
+
+        double minDistanceSquared = Double.POSITIVE_INFINITY;
+        int nearestNodeIndex = -1;
+
+        // Iterate over each node
+        for (int i = 0; i < nNodes; i++) {
+            double nodeX = xNodes[i];
+            double nodeY = yNodes[i];
+
+            // Calculate the squared distance between the point and the current node
+            double distanceSquared = (x - nodeX) * (x - nodeX) + (y - nodeY) * (y - nodeY);
+
+            // Update nearest node if this node is closer
+            if (distanceSquared < minDistanceSquared) {
+                minDistanceSquared = distanceSquared;
+                nearestNodeIndex = i;
+            }
+        }
+
+        return nearestNodeIndex;
+    }
+
     /**
      * Determines whether the specified geographical point (lon, lat) belongs to the
      * is inside the polygon defined by (imin, jmin) & (imin, jmax) & (imax, jmax) &
