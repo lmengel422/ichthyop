@@ -213,8 +213,9 @@ public class Zone extends SimulationManagerAccessor {
             lat.add((float) rhoPoint.getLat());
             lon.add((float) rhoPoint.getLon());
             rhoPoint.geo2Grid();
-            /* make sure the point belongs to the simulated domain */
-            if (rhoPoint.getX() < 0 || rhoPoint.getY() < 0) {
+            /* make sure the point belongs to the simulated domain - need to update */
+            double minX = -180, maxX = 180, minY = -90, maxY = 90;
+            if (rhoPoint.getX() < minX || rhoPoint.getX() > maxX || rhoPoint.getY() < minY || rhoPoint.getY() > maxY) {
                 StringBuilder sb = new StringBuilder();
                 sb.append(getType());
                 sb.append(" zone \"");
