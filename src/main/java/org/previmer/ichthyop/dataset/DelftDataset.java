@@ -998,32 +998,26 @@ public class DelftDataset extends AbstractDataset {
     }
 
     private double[][] compute_du_dx(Array u) {
-
         double[][] du_dx = new double[this.nTriangles][this.nLayer];
         Index index = u.getIndex();
 
         for (int i = 0; i < nTriangles; i++) {
             for (int l = 0; l < this.nLayer; l++) {
-
-                index.set(i, l);
-
-                du_dx[i][l] += u.getDouble(index);
-
-                // we loop over the neighbours
-                // u(E1, Li) + u(E2, Li) + u(E3, Li) in
-                // equation
+                double sum = 0.0;
                 for (int n = 0; n < 3; n++) {
                     int neighbour = this.neighbouringTriangles[i][n];
                     if (neighbour >= 0) {
                         index.set(neighbour, l);
-                        du_dx[i][l] += u.getDouble(index);
+                        sum += u.getDouble(index);
                     }
                 }
+                index.set(i, l);
+                double u_center = u.getDouble(index);
+                du_dx[i][l] = sum / 3.0 - u_center;
             }
         }
 
         return du_dx;
-
     }
 
     /**
