@@ -159,7 +159,7 @@ public class RequiredVariable {
         double[][] dT_dY = fvcom.getDtDy(name);
 
         int iTriangle = fvcom.findTriangle(pGrid);
-        int iNode = fvcom.findNearestNode(pGrid);
+        int iNode = fvcom.findNearestNode(pGrid); //FIXME I added this - temperature on node
 
         double xB = fvcom.getXBarycenter(iTriangle);
         double yB = fvcom.getYBarycenter(iTriangle);
@@ -173,7 +173,7 @@ public class RequiredVariable {
             // if the depth of the particle is between two T layers, we recover the value
             // at the T layer which is below
             output_kzp1 = tracer_0[kz][iNode] + dT_dX[kz][iNode] * dX + dT_dY[kz][iNode] * dY;
-            dist = kz + 0.5 - z;
+            dist = kz + 0.5 - z; //FIXME dist should be positive
         }
 
         double output = dist * output_kz + ( 1 - dist) *output_kzp1;
