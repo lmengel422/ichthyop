@@ -196,7 +196,7 @@ public class DelftDataset extends AbstractDataset {
         time_arrow = timeArrow();
 
         // Change the way distance is computed. Move to Euclidian in this case,
-        // since data is already provided in meters.
+        // since data is already provided in meters. FIXME - check this is working
         this.setDistGetter((lat1, lon1, lat2, lon2) -> DatasetUtil.euclidianDistance(lat1, lon1, lat2, lon2));
 
     }
@@ -219,7 +219,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     /**
-     * In DELFT, everything runs in lat/lon. I have projected coordinates in now.
+     * In DELFT, everything runs in lat/lon. FIXME I have projected coordinates in now.
      */
     @Override
     public double[] latlon2xy(double lat, double lon) {
@@ -227,7 +227,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     /**
-     * In DELFT, everything runs in lat/lon. I have projected coordinates in now.
+     * In DELFT, everything runs in lat/lon. FIXME I have projected coordinates in now.
      */
     @Override
     public double[] xy2latlon(double xRho, double yRho) {
@@ -235,7 +235,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     @Override
-    public double depth2z(double x, double y, double depth) {
+    public double depth2z(double x, double y, double depth) { //FiXME check this is working
 
         // -----------------------------------------------
         // Return z[grid] corresponding to depth[meters]
@@ -255,7 +255,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     @Override
-    public double z2depth(double x, double y, double z) {
+    public double z2depth(double x, double y, double z) { //FIXME check this is working
 
         if(z >= nLayer) {
             return getDepth(x, y, nLayer);
@@ -275,7 +275,7 @@ public class DelftDataset extends AbstractDataset {
     /**
      * Generate speed calculator. In FVCOM, all velocity fields are stored on the
      * same location. Therefore, the same function can be used to compute the
-     * interpolation.
+     * interpolation. FIXME check this is working
      */
     public double getSpeed(double[] pGrid, double time, Array array_tp0, Array array_tp1, double[][] dx_0,
             double[][] dx_1, double[][] dy_0, double[][] dy_1) {
@@ -526,7 +526,7 @@ public class DelftDataset extends AbstractDataset {
         return true;
     }
 
-    private double getDepth(double xRho, double yRho, int k) {
+    private double getDepth(double xRho, double yRho, int k) { // FIXME check this is working
 
         double pGrid[] = new double[] { xRho, yRho };
         int iTriangle = this.findTriangle(pGrid);
@@ -997,7 +997,7 @@ public class DelftDataset extends AbstractDataset {
         return (isInPolygone);
     }
 
-    private double[][] compute_du_dx(Array u) {
+    private double[][] compute_du_dx(Array u) { //FIXME check this is working
         double[][] du_dx = new double[this.nTriangles][this.nLayer];
         Index index = u.getIndex();
 
@@ -1112,7 +1112,7 @@ public class DelftDataset extends AbstractDataset {
      * Compute the differente variables used for the interpolation. If aw = aw0,
      * returns T0 If aw = awx, returns dT/dX If aw = awy, returns dT/dY
      */
-    private double[][] compute_dt_dx(Array tracer) {
+    private double[][] compute_dt_dx(Array tracer) { //FIXME check this is working
 
         double[][] dt_dx = new double[this.nTriangles][this.nLayer];
         Index index = tracer.getIndex();
