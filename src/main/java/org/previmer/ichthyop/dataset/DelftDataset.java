@@ -219,7 +219,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     /**
-     * In DELFT, everything runs in lat/lon.
+     * In DELFT, everything runs in lat/lon. I have projected coordinates in now.
      */
     @Override
     public double[] latlon2xy(double lat, double lon) {
@@ -227,7 +227,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     /**
-     * In DELFT, everything runs in lat/lon.
+     * In DELFT, everything runs in lat/lon. I have projected coordinates in now.
      */
     @Override
     public double[] xy2latlon(double xRho, double yRho) {
