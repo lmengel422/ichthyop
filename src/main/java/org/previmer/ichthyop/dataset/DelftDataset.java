@@ -379,11 +379,11 @@ public class DelftDataset extends AbstractDataset {
         // If the z index is greater than the nLayer value,
         // consider we are on water
         if(pGrid[2] >= nLayer) {
-            return false;
+            return false; //FIXME issue with particle factory
         }
 
         double depth = z2depth(pGrid[0], pGrid[1], pGrid[2]);
-        return (depth < H_triangle[iTriangle]);
+        return (depth < H_triangle[iTriangle]); //FIXME this is not working. also i have vertical advection disabled for now
     }
 
     @Override
