@@ -1004,16 +1004,19 @@ public class DelftDataset extends AbstractDataset {
         for (int i = 0; i < nTriangles; i++) {
             for (int l = 0; l < this.nLayer; l++) {
                 double sum = 0.0;
+                double distance = 0.0;
                 for (int n = 0; n < 3; n++) {
                     int neighbour = this.neighbouringTriangles[i][n];
                     if (neighbour >= 0) {
                         index.set(neighbour, l);
                         sum += u.getDouble(index);
+                        distance += Math.sqrt(Math.pow(xBarycenter[neighbour] - xBarycenter[i], 2)
+                                + Math.pow(yBarycenter[neighbour] - yBarycenter[i], 2));
                     }
                 }
                 index.set(i, l);
                 double u_center = u.getDouble(index);
-                du_dx[i][l] = sum / 3.0 - u_center;
+                du_dx[i][l] = (sum / 3.0 - u_center)/(distance / 3.0);
             }
         }
 
