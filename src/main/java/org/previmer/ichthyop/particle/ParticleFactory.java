@@ -120,7 +120,7 @@ public class ParticleFactory extends SimulationManagerAccessor {
 
         particle.setDepth(depth);
         /* bugfixing 2011/06/28
-         * setDepth but z unset and then calling isInWater ==> crash
+         * setDepth but z unset and then calling isInWater ==> crash FIXME still a problem
          * phv 2011/09/25: wondering wether the make2D should not occur before
          * the geo2grid, to be checked...
          */
