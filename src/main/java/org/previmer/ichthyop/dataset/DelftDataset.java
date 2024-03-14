@@ -778,7 +778,7 @@ public class DelftDataset extends AbstractDataset {
         index = HArrayTriangle.getIndex();
         for (int i = 0; i < this.nTriangles; i++) {
             index.set(i);
-            H_triangle[i] = HArrayTriangle.getDouble(index);
+            H_triangle[i] = HArrayTriangle.getDouble(index); //FIXME need some sort of check for when below 150 m
         }
 
         // Reading of the sigma array on Z levels
@@ -787,7 +787,7 @@ public class DelftDataset extends AbstractDataset {
         index = sigArray.getIndex();
         for (int k = 0; k < this.nLayer + 1; k++) {
             index.set(k);
-            sigma[k] = sigArray.getDouble(index);
+            sigma[k] = sigArray.getDouble(index); //FIXME need some sort of check for when k < 26
         }
 
         this.cflThreshold = Float.MAX_VALUE;
@@ -1130,7 +1130,7 @@ public class DelftDataset extends AbstractDataset {
                     int neighbour = this.triangleNodes[i][n];
                     if (neighbour >= 0) {
                         index.set(l, neighbour);
-                        dt_dx[i][l] += tracer.getDouble(index);
+                        dt_dx[i][l] += tracer.getDouble(index); //FIXME need to make this an average not just a sum
                     }
                 }
             }
@@ -1157,7 +1157,7 @@ public class DelftDataset extends AbstractDataset {
                 int neighbour = this.triangleNodes[i][n];
                 if (neighbour >= 0) {
                     index.set(neighbour);
-                    dt_dx[i] += tracer.getDouble(index);
+                    dt_dx[i] += tracer.getDouble(index); //FIXME need to make this an average not just a sum
                 }
             }
         }
