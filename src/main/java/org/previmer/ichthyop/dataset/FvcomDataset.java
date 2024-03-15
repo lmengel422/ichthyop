@@ -1170,14 +1170,14 @@ public class FvcomDataset extends AbstractDataset {
      */
     private double[][] compute_dt_dx(Array tracer, float[][] aw) {
 
-        double[][] dt_dx = new double[this.nLayer][this.nTriangles];
+        double[][] dt_dx = new double[this.nLayer][this.nNodes];
         Index index = tracer.getIndex();
 
-        for (int i = 0; i < nTriangles; i++) {
+        for (int i = 0; i < nNodes; i++) {
             for (int l = 0; l < this.nLayer; l++) {
 
                 // we loop over the neighbours
-                // a1u(E0, 2) * u(E1, Li) + a1u(E0, 3) * u(E2, Li) + a1u(E0, 4) * u(E3, Li) in
+                // aw0(E0, 1) * t(N1, Li) + aw0(E0, 2) * t(N2, Li) + aw0(E0, 3) * t(N3, Li) in
                 // equation
                 for (int n = 0; n < 3; n++) {
                     int neighbour = this.triangleNodes[i][n];
