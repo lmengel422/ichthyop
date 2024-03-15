@@ -159,7 +159,12 @@ public class RequiredVariable {
         double[][] dT_dY = fvcom.getDtDy(name);
 
         int iTriangle = fvcom.findTriangle(pGrid);
-        int iNode = fvcom.findNearestNode(pGrid); //FIXME I added this - temperature on node
+
+        if (iTriangle < 0){ //Particle is beached
+            return Float.NaN;
+        }
+
+        int iNode = fvcom.findNearestNode(pGrid); //LME added this - temperature on node
 
         double xB = fvcom.getXBarycenter(iTriangle);
         double yB = fvcom.getYBarycenter(iTriangle);
