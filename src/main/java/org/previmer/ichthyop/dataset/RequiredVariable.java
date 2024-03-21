@@ -178,7 +178,7 @@ public class RequiredVariable {
             // if the depth of the particle is between two T layers, we recover the value
             // at the T layer which is below
             output_kzp1 = tracer_0[kz][iNode] + dT_dX[kz][iNode] * dX + dT_dY[kz][iNode] * dY;
-            dist = kz + 0.5 - z; //FIXME dist should be positive
+            dist = kz + 0.5 - z; //FIXME dist should be positive still need
         }
 
         double output = dist * output_kz + ( 1 - dist) *output_kzp1;
