@@ -198,7 +198,7 @@ public class DelftDataset extends AbstractDataset {
         time_arrow = timeArrow();
 
         // Change the way distance is computed. Move to Euclidian in this case,
-        // since data is already provided in meters. FIXME - need to have projected coordinates
+        // since data is already provided in meters. Need to input in projected coordinates
         this.setDistGetter((lat1, lon1, lat2, lon2) -> DatasetUtil.euclidianDistance(lat1, lon1, lat2, lon2));
 
     }
@@ -221,7 +221,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     /**
-     * In DELFT, everything runs in lat/lon. FIXME I have projected coordinates in now.
+     * In DELFT, everything runs in lat/lon. Need to input in projected coordinates to run.
      */
     @Override
     public double[] latlon2xy(double lat, double lon) {
@@ -229,7 +229,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     /**
-     * In DELFT, everything runs in lat/lon. FIXME I have projected coordinates in now.
+     * In DELFT, everything runs in lat/lon. Need to input in projected coordinates to run.
      */
     @Override
     public double[] xy2latlon(double xRho, double yRho) {
@@ -385,7 +385,7 @@ public class DelftDataset extends AbstractDataset {
         }
 
         double depth = z2depth(pGrid[0], pGrid[1], pGrid[2]);
-        return true; //(depth < H_triangle[iTriangle]); //FIXME this is not working. also i have vertical advection disabled for now
+        return (depth < H_triangle[iTriangle]);
     }
 
     @Override
