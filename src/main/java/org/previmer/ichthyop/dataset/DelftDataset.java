@@ -96,6 +96,9 @@ public class DelftDataset extends AbstractDataset {
     // Bathy center of the triangle
     private double[] H_triangle;
 
+    // Masked bathy center of the triangle
+    private double[] H_triangle_masked;
+
     private double lonMin, latMin;
     private double lonMax, latMax;
 
@@ -124,7 +127,6 @@ public class DelftDataset extends AbstractDataset {
     private String strV;
     private String strW;
     private String strSigma;
-    private String strBathy;
     private String strBathyTriangle;
     private String strZeta;
     private String strTime;
@@ -422,8 +424,18 @@ public class DelftDataset extends AbstractDataset {
         int triangle = this.findTriangle(pGrid);
         if(triangle < 0) {
             return 0;
-        } else { //FIXME need some sort of check for when below 150 m
+        } else {
             return -H_triangle[triangle];
+        }
+    }
+
+    public double getmaskedBathyPos(double x, double y) { //Use instead of getBathyPos when need masked bathy
+        double[] pGrid = new double[] {x, y};
+        int triangle = this.findTriangle(pGrid);
+        if(triangle < 0) {
+            return 0;
+        } else {
+            return -H_triangle_masked[triangle];
         }
     }
 
@@ -526,6 +538,7 @@ public class DelftDataset extends AbstractDataset {
         return true;
     }
 
+
     private double getDepth(double xRho, double yRho, int k) { // FIXME check this is working
 
         double pGrid[] = new double[] { xRho, yRho };
@@ -540,12 +553,17 @@ public class DelftDataset extends AbstractDataset {
         double dY = yRho - yB;
 
         // Interpolation of the bathy on the given location
-        double Ht = H0[iTriangle] + dHdx[iTriangle] * dX + dHdy[iTriangle] * dY;
-        // interpolation of zeta on the given location
+        double Ht = H_triangle[iTriangle] + dHdx[iTriangle] * dX + dHdy[iTriangle] * dY;
+        // interpolation of zeta on the given location FIXME zeta0 is wrong right now, I think
         double zetaT = zeta0[iTriangle] + dzetadx[iTriangle] * dX + dzetady[iTriangle] * dY;
 
         // getting the sigma value
         double sig = sigma[k];
+
+        //mask to only do sigma layering if shallower than 150.
+        if (Ht > 150) {
+            Ht = 150;
+        }
 
         // getting the depth value
         double depth = zetaT + sig * (zetaT + Ht);
@@ -635,7 +653,6 @@ public class DelftDataset extends AbstractDataset {
         strZeta = getParameter("field_var_zeta");
 
         strSigma = getParameter("field_var_sigma");
-        strBathy = getParameter("field_var_bathy");
         strBathyTriangle = getParameter("field_var_bathy_triangle");
 
         strNodes = getParameter("field_var_nodes");
@@ -765,41 +782,7 @@ public class DelftDataset extends AbstractDataset {
         this.latMin = extremeLat[0];
         this.latMax = extremeLat[1];
 
-        // reads the bathymetry on the nodes (as the coordinates)
-        Array HArray = ncIn.findVariable(strBathy).read();
-        this.dHdx = this.compute_dzeta_dx(HArray);
-        this.dHdy = this.compute_dzeta_dx(HArray);
-        this.H0 = this.compute_dzeta_dx(HArray);
-
         Index index;
-
-        Array HArrayTriangle = ncIn.findVariable(strBathyTriangle).read();
-        this.H_triangle = new double[nTriangles];
-        index = HArrayTriangle.getIndex();
-        for (int i = 0; i < this.nTriangles; i++) {
-            index.set(i);
-            H_triangle[i] = HArrayTriangle.getDouble(index); //FIXME need some sort of check for when below 150 m
-        }
-
-        // Reading of the sigma array on Z levels
-        Array sigArray = ncIn.findVariable(strSigma).read().reduce();
-        sigma = new double[this.nLayer + 1];
-        index = sigArray.getIndex();
-        for (int k = 0; k < this.nLayer + 1; k++) {
-            index.set(k);
-            sigma[k] = sigArray.getDouble(index); //FIXME need some sort of check for when k < 26
-        }
-
-        this.cflThreshold = Float.MAX_VALUE;
-        for (int i = 0; i < this.nTriangles; i++) {
-            for (int p = 0; p < 3; p++) {
-                int node1 = this.triangleNodes[i][p];
-                int node2 = this.triangleNodes[i][(p + 1) % 3];
-                double dist = Math
-                        .sqrt(Math.pow(xNodes[node1] - xNodes[node2], 2) + Math.pow(yNodes[node1] - yNodes[node2], 2));
-                this.cflThreshold = Math.min(this.cflThreshold, (float) dist);
-            }
-        }
 
         xBarycenter = new double[this.nTriangles];
         for (int i = 0; i < this.nTriangles; i++) {
@@ -825,6 +808,47 @@ public class DelftDataset extends AbstractDataset {
                 }
             }
             yBarycenter[i] /= 3.;
+        }
+
+        // reads the bathymetry on the faces (as the coordinates)
+        Array HArrayTriangle = ncIn.findVariable(strBathyTriangle).read();
+        this.dHdx = this.compute_dzeta_dx(HArrayTriangle);
+        this.dHdy = this.compute_dzeta_dx(HArrayTriangle);
+        this.H0 = this.compute_dzeta_dx(HArrayTriangle);
+        this.H_triangle = new double[nTriangles];
+        this.H_triangle_masked = new double[nTriangles];
+        index = HArrayTriangle.getIndex();
+        for (int i = 0; i < this.nTriangles; i++) {
+            index.set(i);
+            H_triangle[i] = HArrayTriangle.getDouble(index);
+            if (H_triangle[i] > 150) { //Mask bathymetry deeper than 150 (sigma layering only for top 150m)
+                H_triangle_masked[i] = 150;
+            } else {
+                H_triangle_masked[i] = H_triangle[i];
+            }
+        }
+
+        // Reading of the sigma array on Z levels
+        Array sigArray = ncIn.findVariable(strSigma).read().reduce();
+        sigma = new double[this.nLayer + 1];
+        index = sigArray.getIndex();
+        for (int k = 0; k < this.nLayer + 1; k++) {
+            index.set(k);
+            sigma[k] = sigArray.getDouble(index);
+            if (Double.isNaN(sigma[k])) { //Make sigma -1 when depth below sigma layering (force depth to -150m)
+                sigma[k] = -1;
+            }
+        }
+
+        this.cflThreshold = Float.MAX_VALUE;
+        for (int i = 0; i < this.nTriangles; i++) {
+            for (int p = 0; p < 3; p++) {
+                int node1 = this.triangleNodes[i][p];
+                int node2 = this.triangleNodes[i][(p + 1) % 3];
+                double dist = Math
+                        .sqrt(Math.pow(xNodes[node1] - xNodes[node2], 2) + Math.pow(yNodes[node1] - yNodes[node2], 2));
+                this.cflThreshold = Math.min(this.cflThreshold, (float) dist);
+            }
         }
 
         // initialize the zeta arrays used for the interpolation
@@ -1123,13 +1147,15 @@ public class DelftDataset extends AbstractDataset {
 
         for (int i = 0; i < nTriangles; i++) {
             for (int l = 0; l < this.nLayer; l++) {
-                // we loop over the neighbours
-                // u(E1, Li) + u(E2, Li) +  u(E3, Li) in equation
+                // we loop over the neighbours, calculate dt/dx
                 for (int n = 0; n < 3; n++) {
                     int neighbour = this.triangleNodes[i][n];
+                    double distance = 0.0;
                     if (neighbour >= 0) {
                         index.set(l, neighbour);
-                        dt_dx[i][l] += tracer.getDouble(index);
+                        distance = Math.sqrt(Math.pow(xBarycenter[neighbour] - xBarycenter[i], 2)
+                                + Math.pow(yBarycenter[neighbour] - yBarycenter[i], 2));
+                        dt_dx[i][l] += tracer.getDouble(index)/distance;
                         counts[i][l]++; // Increment the count for this triangle and layer
                     }
                 }
@@ -1159,14 +1185,15 @@ public class DelftDataset extends AbstractDataset {
         Index index = tracer.getIndex();
 
         for (int i = 0; i < nTriangles; i++) {
-            // we loop over the neighbours
-            // u(E1, Li) + u(E2, Li) +  u(E3, Li) in
-            // equation
+            // we loop over the neighbours, calculate dt_dx
             for (int n = 0; n < 3; n++) {
                 int neighbour = this.triangleNodes[i][n];
                 if (neighbour >= 0) {
+                    double distance = 0.0;
                     index.set(neighbour);
-                    dt_dx[i] += tracer.getDouble(index);
+                    distance = Math.sqrt(Math.pow(xBarycenter[neighbour] - xBarycenter[i], 2)
+                                + Math.pow(yBarycenter[neighbour] - yBarycenter[i], 2));
+                    dt_dx[i] += tracer.getDouble(index)/distance;
                     counts[i]++; // Increment the count for this triangle
                 }
             }
