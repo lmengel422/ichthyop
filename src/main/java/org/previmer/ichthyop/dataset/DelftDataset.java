@@ -196,7 +196,7 @@ public class DelftDataset extends AbstractDataset {
         time_arrow = timeArrow();
 
         // Change the way distance is computed. Move to Euclidian in this case,
-        // since data is already provided in meters. FIXME - check this is working
+        // since data is already provided in meters. FIXME - need to have projected coordinates
         this.setDistGetter((lat1, lon1, lat2, lon2) -> DatasetUtil.euclidianDistance(lat1, lon1, lat2, lon2));
 
     }
@@ -273,7 +273,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     /**
-     * Generate speed calculator. In FVCOM, all velocity fields are stored on the
+     * Generate speed calculator. In DELFT, all velocity fields are stored on the
      * same location. Therefore, the same function can be used to compute the
      * interpolation. FIXME check this is working
      */
@@ -379,11 +379,11 @@ public class DelftDataset extends AbstractDataset {
         // If the z index is greater than the nLayer value,
         // consider we are on water
         if(pGrid[2] >= nLayer) {
-            return false; //FIXME issue with particle factory
+            return true; //false; //FIXME issue with particle factory
         }
 
         double depth = z2depth(pGrid[0], pGrid[1], pGrid[2]);
-        return (depth < H_triangle[iTriangle]); //FIXME this is not working. also i have vertical advection disabled for now
+        return true; //(depth < H_triangle[iTriangle]); //FIXME this is not working. also i have vertical advection disabled for now
     }
 
     @Override
@@ -422,7 +422,7 @@ public class DelftDataset extends AbstractDataset {
         int triangle = this.findTriangle(pGrid);
         if(triangle < 0) {
             return 0;
-        } else {
+        } else { //FIXME need some sort of check for when below 150 m
             return -H_triangle[triangle];
         }
     }
@@ -1118,35 +1118,44 @@ public class DelftDataset extends AbstractDataset {
     private double[][] compute_dt_dx(Array tracer) { //FIXME check this is working
 
         double[][] dt_dx = new double[this.nTriangles][this.nLayer];
+        int[][] counts = new int[this.nTriangles][this.nLayer]; // Array to store the count of neighbors for each triangle and each layer
         Index index = tracer.getIndex();
 
         for (int i = 0; i < nTriangles; i++) {
             for (int l = 0; l < this.nLayer; l++) {
-
                 // we loop over the neighbours
-                //  u(E1, Li) +  u(E2, Li) +  u(E3, Li) in
-                // equation
+                // u(E1, Li) + u(E2, Li) +  u(E3, Li) in equation
                 for (int n = 0; n < 3; n++) {
                     int neighbour = this.triangleNodes[i][n];
                     if (neighbour >= 0) {
                         index.set(l, neighbour);
-                        dt_dx[i][l] += tracer.getDouble(index); //FIXME need to make this an average not just a sum
+                        dt_dx[i][l] += tracer.getDouble(index);
+                        counts[i][l]++; // Increment the count for this triangle and layer
                     }
                 }
             }
         }
 
-        return dt_dx;
+        // Compute the average by dividing the sum by the count for each triangle and each layer
+        for (int i = 0; i < nTriangles; i++) {
+            for (int l = 0; l < this.nLayer; l++) {
+                if (counts[i][l] > 0) {
+                    dt_dx[i][l] /= counts[i][l];
+                }
+            }
+        }
 
+        return dt_dx;
     }
 
     /**
      * Compute the different variables used for the interpolation. If aw = aw0,
      * returns T0 If aw = awx, returns dT/dX If aw = awy, returns dT/dY
      */
-    private double[] compute_dzeta_dx(Array tracer) {
+    private double[] compute_dzeta_dx(Array tracer) { //FIXME check this is working
 
         double[] dt_dx = new double[this.nTriangles];
+        int[] counts = new int[this.nTriangles]; // Array to store the count of neighbors for each triangle
         Index index = tracer.getIndex();
 
         for (int i = 0; i < nTriangles; i++) {
@@ -1157,13 +1166,20 @@ public class DelftDataset extends AbstractDataset {
                 int neighbour = this.triangleNodes[i][n];
                 if (neighbour >= 0) {
                     index.set(neighbour);
-                    dt_dx[i] += tracer.getDouble(index); //FIXME need to make this an average not just a sum
+                    dt_dx[i] += tracer.getDouble(index);
+                    counts[i]++; // Increment the count for this triangle
                 }
             }
         }
 
-        return dt_dx;
+        // Compute the average by dividing the sum by the count for each triangle
+        for (int i = 0; i < nTriangles; i++) {
+            if (counts[i] > 0) {
+                dt_dx[i] /= counts[i];
+            }
+        }
 
+        return dt_dx;
     }
 
     public double[][] getTracer0(String name) {
