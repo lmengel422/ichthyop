@@ -816,7 +816,7 @@ public class DelftDataset extends AbstractDataset {
         this.dHdy = this.compute_dzeta_dx(HArrayTriangle);
         this.H0 = this.compute_dzeta_dx(HArrayTriangle);
         this.H_triangle = new double[nTriangles];
-        this.H_triangle_masked = new double[nTriangles];
+        this.H_triangle_masked = new double[nTriangles]; //FIXME do I even need this? Taken care of in depth...
         index = HArrayTriangle.getIndex();
         for (int i = 0; i < this.nTriangles; i++) {
             index.set(i);
