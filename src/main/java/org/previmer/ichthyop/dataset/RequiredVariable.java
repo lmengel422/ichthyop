@@ -164,6 +164,7 @@ public class RequiredVariable {
         double dX = pGrid[0] - xB;
         double dY = pGrid[1] - yB;
 
+        //FIXME update to weighted average
         double output_kz = tracer_0[iTriangle][kz] + dT_dX[iTriangle][kz] * dX + dT_dY[iTriangle][kz] * dY;
         double output_kzp1 = 0;
 

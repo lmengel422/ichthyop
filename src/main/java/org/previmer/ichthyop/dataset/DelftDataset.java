@@ -1313,7 +1313,7 @@ public class DelftDataset extends AbstractDataset {
         return yBarycenter;
     }
 
-    private void updateTracerFields(double time) {
+    private void updateTracerFields(double time) { //FIXME change to weighted average
 
         double x_euler = (dt_HyMo - Math.abs(time_tp1 - time)) / dt_HyMo;
 
