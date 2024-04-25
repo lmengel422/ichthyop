@@ -172,17 +172,11 @@ public class DelftDataset extends AbstractDataset {
 
     private int[] nNeighbours;
 
-    private HashMap<String, double[][]> tracer0_0;
-    private HashMap<String, double[][]> dTdX_0;
-    private HashMap<String, double[][]> dTdY_0;
+    private HashMap<String, double[][]> tracer_0;
 
-    private HashMap<String, double[][]> tracer0_1;
-    private HashMap<String, double[][]> dTdX_1;
-    private HashMap<String, double[][]> dTdY_1;
+    private HashMap<String, double[][]> tracer_1;
 
-    private HashMap<String, double[][]> tracer0;
-    private HashMap<String, double[][]> dTdX;
-    private HashMap<String, double[][]> dTdY;
+    private HashMap<String, double[][]> tracer;
 
     /*
      * Sets up the {@code Dataset}. The method first sets the appropriate variable
@@ -214,17 +208,11 @@ public class DelftDataset extends AbstractDataset {
     /** HashMap initialization */
     private void initHashMaps() {
 
-        tracer0_0 = new HashMap<>();
-        dTdX_0 = new HashMap<>();
-        dTdY_0 = new HashMap<>();
+        tracer_0 = new HashMap<>();
 
-        tracer0_1 = new HashMap<>();
-        dTdX_1 = new HashMap<>();
-        dTdY_1 = new HashMap<>();
+        tracer_1 = new HashMap<>();
 
-        tracer0 = new HashMap<>();
-        dTdX = new HashMap<>();
-        dTdY = new HashMap<>();
+        tracer = new HashMap<>();
 
     }
 
@@ -298,9 +286,6 @@ public class DelftDataset extends AbstractDataset {
 
         double x_euler = (dt_HyMo - Math.abs(time_tp1 - time)) / dt_HyMo;
 
-        Index index0 = array_tp0.getIndex();
-        Index index1 = array_tp1.getIndex();
-
         // index along the W axis (0 = surface, nz = bottom)
         double z = pGrid[2];
 
@@ -308,19 +293,13 @@ public class DelftDataset extends AbstractDataset {
         int kz = (int) Math.max(0, Math.floor(z - 0.5));
         double dist = 1;
 
-        index0.set(iTriangle, kz);
-        index1.set(iTriangle, kz);
-
         //Find edges of the triangle
         int[] edges = findEdge(iTriangle);
 
         //Compute distance from the point to each of the edges
-        double d1 = Math.sqrt(Math.pow(pGrid[0] - xEdges[edges[0]], 2)
-                + Math.pow(pGrid[1] - yEdges[edges[0]], 2));
-        double d2 = Math.sqrt(Math.pow(pGrid[0] - xEdges[edges[1]], 2)
-                + Math.pow(pGrid[1] - yEdges[edges[1]], 2));
-        double d3 = Math.sqrt(Math.pow(pGrid[0] - xEdges[edges[2]], 2)
-                + Math.pow(pGrid[1] - yEdges[edges[2]], 2));
+        double d1 = calc_distance(pGrid, edges[0]);
+        double d2 = calc_distance(pGrid, edges[1]);
+        double d3 = calc_distance(pGrid, edges[2]);
 
         // Weighted average of all the edges at kz
         double output_0_kz = (d1 * edge_0[edges[0]][kz] + d2 * edge_0[edges[1]][kz] + d3 * edge_0[edges[2]][kz])/(d1+d2+d3);
@@ -334,8 +313,6 @@ public class DelftDataset extends AbstractDataset {
         if (z >= 0.5 && z <= nLayer - 1 + 0.5) {
             // if the depth of the particle is between two T layers, we recover the value
             // at the T layer which is below
-            index0.set(iTriangle, kz + 1);
-            index1.set(iTriangle, kz + 1);
             // Weighted average of all the edges at kz+1
             output_0_kzp1 = (d1 * edge_0[edges[0]][kz+1] + d2 * edge_0[edges[1]][kz+1] + d3 * edge_0[edges[2]][kz+1])/(d1+d2+d3);
             output_1_kzp1 = (d1 * edge_1[edges[0]][kz+1] + d2 * edge_1[edges[1]][kz+1] + d3 * edge_1[edges[2]][kz+1])/(d1+d2+d3);
@@ -570,12 +547,9 @@ public class DelftDataset extends AbstractDataset {
         int[] edges = findEdge(iTriangle);
 
         //Compute distance from the point to each of the edges
-        double d1 = Math.sqrt(Math.pow(pGrid[0] - xEdges[edges[0]], 2)
-                + Math.pow(pGrid[1] - yEdges[edges[0]], 2));
-        double d2 = Math.sqrt(Math.pow(pGrid[0] - xEdges[edges[1]], 2)
-                + Math.pow(pGrid[1] - yEdges[edges[1]], 2));
-        double d3 = Math.sqrt(Math.pow(pGrid[0] - xEdges[edges[2]], 2)
-                + Math.pow(pGrid[1] - yEdges[edges[2]], 2));
+        double d1 = calc_distance(pGrid,edges[0]);
+        double d2 = calc_distance(pGrid,edges[1]);
+        double d3 = calc_distance(pGrid,edges[2]);
 
         // Weighted average interpolation of the bathy on the given location
         double Ht = (d1 * edge_H[edges[0]] + d2 * edge_H[edges[1]] + d3 * edge_H[edges[2]])/(d1+d2+d3);
@@ -637,9 +611,7 @@ public class DelftDataset extends AbstractDataset {
 
         // Swap arrays for required variables
         for (String name : this.getRequiredVariables().keySet()) {
-            tracer0_0.put(name, tracer0_1.get(name));
-            dTdX_0.put(name, dTdX_1.get(name));
-            dTdY_0.put(name, dTdY_1.get(name));
+            tracer_0.put(name, tracer_1.get(name));
         }
 
         rank += time_arrow;
@@ -1001,7 +973,7 @@ public class DelftDataset extends AbstractDataset {
 
     }
 
-    private int[] findEdge(int iTriangle) {
+    public int[] findEdge(int iTriangle) {
         //Indices to where the edge is on the triangle
         int[] indices = new int[3];
         int count = 0; // Counter for the number of occurrences
@@ -1023,6 +995,11 @@ public class DelftDataset extends AbstractDataset {
             indices[count++] = indices[0];
         }
         return indices;
+    }
+
+    public double calc_distance(double[] pGrid, int edge) {
+        double d = Math.sqrt(Math.pow(pGrid[0] - xEdges[edge], 2) + Math.pow(pGrid[1] - yEdges[edge], 2));
+        return d;
     }
 
     /**
@@ -1094,7 +1071,7 @@ public class DelftDataset extends AbstractDataset {
 
     private double[][] compute_edge_u(Array u) {
 
-        //Weighted average velocity at edge for each triangle
+        //Weighted average velocity or tracer at edge for each triangle
 
         double[][] edge_u = new double[this.nEdges][this.nLayer];
         Index index1 = u.getIndex();
@@ -1110,10 +1087,8 @@ public class DelftDataset extends AbstractDataset {
                 triangle2 = triangle1;
             }
 
-            double d1 = Math.sqrt(Math.pow(xBarycenter[triangle1] - xEdges[i], 2)
-                    + Math.pow(yBarycenter[triangle1] - yEdges[i], 2));
-            double d2 = Math.sqrt(Math.pow(xBarycenter[triangle2] - xEdges[i], 2)
-                    + Math.pow(yBarycenter[triangle2] - yEdges[i], 2));
+            double d1 = calc_distance(new double[]{xBarycenter[triangle1], yBarycenter[triangle1]}, i);
+            double d2 = calc_distance(new double[]{xBarycenter[triangle2], yBarycenter[triangle2]}, i);
             for (int l = 0; l < this.nLayer; l++) {
                 index1.set(triangle1, l);
                 index2.set(triangle2, l);
@@ -1191,10 +1166,8 @@ public class DelftDataset extends AbstractDataset {
         dt_HyMo = Math.abs(time_tp1 - time_tp0);
 
         for (String name : this.getRequiredVariables().keySet()) {
-            Array tracer = ncIn.findVariable(name).read(origin, new int[] { 1, this.nLayer, this.nNodes }).reduce();
-            this.tracer0_1.put(name, this.compute_dt_dx(tracer));
-            this.dTdX_1.put(name, this.compute_dt_dx(tracer));
-            this.dTdY_1.put(name, this.compute_dt_dx(tracer));
+            Array tracer_raw = ncIn.findVariable(name).read(origin, new int[] { 1, this.nLayer, this.nTriangles }).reduce();
+            this.tracer_1.put(name, this.compute_edge_u(tracer_raw));
         }
 
         // Update the computation of the zeta derivatives used for interpolation
@@ -1205,45 +1178,6 @@ public class DelftDataset extends AbstractDataset {
     @Override
     public boolean isProjected() { // FIXME - useful?
         return true;
-    }
-
-    /**
-     * Compute the differente variables used for the interpolation. If aw = aw0,
-     * returns T0 If aw = awx, returns dT/dX If aw = awy, returns dT/dY
-     */
-    private double[][] compute_dt_dx(Array tracer) { //FIXME change to weighted average
-
-        double[][] dt_dx = new double[this.nTriangles][this.nLayer];
-        int[][] counts = new int[this.nTriangles][this.nLayer]; // Array to store the count of neighbors for each triangle and each layer
-        Index index = tracer.getIndex();
-
-        for (int i = 0; i < nTriangles; i++) {
-            for (int l = 0; l < this.nLayer; l++) {
-                // we loop over the neighbours, calculate dt/dx
-                for (int n = 0; n < 3; n++) {
-                    int neighbour = this.triangleNodes[i][n];
-                    double distance = 0.0;
-                    if (neighbour >= 0) {
-                        index.set(l, neighbour);
-                        distance = Math.sqrt(Math.pow(xBarycenter[neighbour] - xBarycenter[i], 2)
-                                + Math.pow(yBarycenter[neighbour] - yBarycenter[i], 2));
-                        dt_dx[i][l] += tracer.getDouble(index)/distance;
-                        counts[i][l]++; // Increment the count for this triangle and layer
-                    }
-                }
-            }
-        }
-
-        // Compute the average by dividing the sum by the count for each triangle and each layer
-        for (int i = 0; i < nTriangles; i++) {
-            for (int l = 0; l < this.nLayer; l++) {
-                if (counts[i][l] > 0) {
-                    dt_dx[i][l] /= counts[i][l];
-                }
-            }
-        }
-
-        return dt_dx;
     }
 
     private double[] compute_edge_zeta(Array tracer) {
@@ -1264,10 +1198,8 @@ public class DelftDataset extends AbstractDataset {
                 triangle2 = triangle1;
             }
 
-            double d1 = Math.sqrt(Math.pow(xBarycenter[triangle1] - xEdges[i], 2)
-                    + Math.pow(yBarycenter[triangle1] - yEdges[i], 2));
-            double d2 = Math.sqrt(Math.pow(xBarycenter[triangle2] - xEdges[i], 2)
-                    + Math.pow(yBarycenter[triangle2] - yEdges[i], 2));
+            double d1 = calc_distance(new double[]{xBarycenter[triangle1], yBarycenter[triangle1]}, i);
+            double d2 = calc_distance(new double[]{xBarycenter[triangle2], yBarycenter[triangle2]}, i);
 
             index1.set(triangle1);
             index2.set(triangle2);
@@ -1278,15 +1210,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     public double[][] getTracer0(String name) {
-        return tracer0.get(name);
-    }
-
-    public double[][] getDtDx(String name) {
-        return this.dTdX.get(name);
-    }
-
-    public double[][] getDtDy(String name) {
-        return this.dTdY.get(name);
+        return tracer.get(name);
     }
 
     public double getXBarycenter(int iTriangle) {
@@ -1315,32 +1239,14 @@ public class DelftDataset extends AbstractDataset {
 
         double[][] output = new double[this.nLayer][this.nNodes];
         for (String name : this.requiredVariables.keySet()) {
-            double[][] temp0 = this.tracer0_0.get(name);
-            double[][] temp1 = this.tracer0_1.get(name);
+            double[][] temp0 = this.tracer_0.get(name);
+            double[][] temp1 = this.tracer_1.get(name);
             for (int l = 0; l < this.nLayer; l++) {
                 for (int n = 0; n < this.nNodes; n++) {
                     output[l][n] = (1.d - x_euler) * temp0[l][n] + x_euler * temp1[l][n];
                 }
             }
-            this.tracer0.put(name, output);
-
-            temp0 = this.dTdX_0.get(name);
-            temp1 = this.dTdX_1.get(name);
-            for (int l = 0; l < this.nLayer; l++) {
-                for (int n = 0; n < this.nNodes; n++) {
-                    output[l][n] = (1.d - x_euler) * temp0[l][n] + x_euler * temp1[l][n];
-                }
-            }
-            this.dTdX.put(name, output);
-
-            temp0 = this.dTdY_0.get(name);
-            temp1 = this.dTdY_1.get(name);
-            for (int l = 0; l < this.nLayer; l++) {
-                for (int n = 0; n < this.nNodes; n++) {
-                    output[l][n] = (1.d - x_euler) * temp0[l][n] + x_euler * temp1[l][n];
-                }
-            }
-            this.dTdY.put(name, output);
+            this.tracer.put(name, output);
         }
     }
 

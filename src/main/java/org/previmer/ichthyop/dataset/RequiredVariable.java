@@ -50,6 +50,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.previmer.ichthyop.manager.SimulationManager;
 import ucar.ma2.Array;
+import ucar.ma2.Index;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
@@ -149,29 +150,34 @@ public class RequiredVariable {
 
     public Number getDELFT(double[] pGrid, double time) {
 
-         // getting the value at the T-cell to which the particle belongs
-         double z = pGrid[2];
-         int kz = (int) Math.floor(z);
-         double dist = 1;
+        // getting the value at the T-cell to which the particle belongs
+        double z = pGrid[2];
+        int kz = (int) Math.floor(z);
+        double dist = 1;
 
-        double[][] tracer_0 = delft.getTracer0(name);
-        double[][] dT_dX = delft.getDtDx(name);
-        double[][] dT_dY = delft.getDtDy(name);
+        double[][] tracer = delft.getTracer0(name);
 
         int iTriangle = delft.findTriangle(pGrid);
-        double xB = delft.getXBarycenter(iTriangle);
-        double yB = delft.getYBarycenter(iTriangle);
-        double dX = pGrid[0] - xB;
-        double dY = pGrid[1] - yB;
+        if (iTriangle < 0) {
+            return 0;
+        }
 
-        //FIXME update to weighted average
-        double output_kz = tracer_0[iTriangle][kz] + dT_dX[iTriangle][kz] * dX + dT_dY[iTriangle][kz] * dY;
+        //Find edges of the triangle
+        int[] edges = delft.findEdge(iTriangle);
+
+        //Compute distance from the point to each of the edges
+        double d1 = delft.calc_distance(pGrid,edges[0]);
+        double d2 = delft.calc_distance(pGrid,edges[1]);
+        double d3 = delft.calc_distance(pGrid,edges[2]);
+
+        //Weighted average from edge
+        double output_kz = (d1 * tracer[edges[0]][kz] + d2 * tracer[edges[1]][kz] + d3 * tracer[edges[2]][kz])/(d1+d2+d3);
         double output_kzp1 = 0;
 
         if (z >= 0.5 || z <= delft.getNLayer() + 0.5) {
             // if the depth of the particle is between two T layers, we recover the value
             // at the T layer which is below
-            output_kzp1 = tracer_0[iTriangle][kz + 1] + dT_dX[iTriangle][kz + 1] * dX + dT_dY[iTriangle][kz + 1] * dY;
+            output_kzp1 = (d1 * tracer[edges[0]][kz+1] + d2 * tracer[edges[1]][kz+1] + d3 * tracer[edges[2]][kz+1])/(d1+d2+d3);
             dist = kz + 0.5 - z;
         }
 
