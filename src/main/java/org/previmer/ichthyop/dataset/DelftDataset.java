@@ -77,18 +77,14 @@ public class DelftDataset extends AbstractDataset {
     /** Arrays for before/after sigma levels */
     private Array zeta_tp1;
 
-    private double[] dzetadx_0, dzetadx_1;
-    private double[] dzetady_0, dzetady_1;
-    private double[] zeta0_0, zeta0_1;
-    private double[] dzetadx, dzetady, zeta0;
+    private double[] edge_zeta_0, edge_zeta_1;
+    private double[] edge_zeta;
 
     /** Sigma levels (dims=[number of W layers]) */
     private double[] sigma;
 
     // Bathymetry (dims = number of nodes)
-    private double[] dHdx;
-    private double[] dHdy;
-    private double[] H0;
+    private double[] edge_H;
 
     // Bathy center of the triangle
     private double[] H_triangle;
@@ -562,7 +558,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
 
-    private double getDepth(double xRho, double yRho, int k) { // FIXME check this is working
+    private double getDepth(double xRho, double yRho, int k) {
 
         double pGrid[] = new double[] { xRho, yRho };
         int iTriangle = this.findTriangle(pGrid);
@@ -570,15 +566,22 @@ public class DelftDataset extends AbstractDataset {
             return Double.NaN;
         }
 
-        double xB = this.getXBarycenter(iTriangle);
-        double yB = this.getYBarycenter(iTriangle);
-        double dX = xRho - xB;
-        double dY = yRho - yB;
+        //Find edges of the triangle
+        int[] edges = findEdge(iTriangle);
 
-        // Interpolation of the bathy on the given location
-        double Ht = H_triangle[iTriangle] + dHdx[iTriangle] * dX + dHdy[iTriangle] * dY;
-        // interpolation of zeta on the given location FIXME zeta0 is wrong right now, I think
-        double zetaT = zeta0[iTriangle] + dzetadx[iTriangle] * dX + dzetady[iTriangle] * dY;
+        //Compute distance from the point to each of the edges
+        double d1 = Math.sqrt(Math.pow(pGrid[0] - xEdges[edges[0]], 2)
+                + Math.pow(pGrid[1] - yEdges[edges[0]], 2));
+        double d2 = Math.sqrt(Math.pow(pGrid[0] - xEdges[edges[1]], 2)
+                + Math.pow(pGrid[1] - yEdges[edges[1]], 2));
+        double d3 = Math.sqrt(Math.pow(pGrid[0] - xEdges[edges[2]], 2)
+                + Math.pow(pGrid[1] - yEdges[edges[2]], 2));
+
+        // Weighted average interpolation of the bathy on the given location
+        double Ht = (d1 * edge_H[edges[0]] + d2 * edge_H[edges[1]] + d3 * edge_H[edges[2]])/(d1+d2+d3);
+
+        // Weighted average interpolation of zeta on the given location
+        double zetaT = (d1 * edge_zeta[edges[0]] + d2 * edge_zeta[edges[1]] + d3 * edge_zeta[edges[2]])/(d1+d2+d3);
 
         // getting the sigma value
         double sig = sigma[k];
@@ -630,9 +633,7 @@ public class DelftDataset extends AbstractDataset {
         edge_v_0 = edge_v_1;
         edge_w_0 = edge_w_1;
 
-        dzetadx_0 = dzetadx_1;
-        dzetady_0 = dzetady_1;
-        zeta0_0 = zeta0_1;
+        edge_zeta_0 = edge_zeta_1;
 
         // Swap arrays for required variables
         for (String name : this.getRequiredVariables().keySet()) {
@@ -833,6 +834,7 @@ public class DelftDataset extends AbstractDataset {
 
         Index index;
 
+        //FIXME - use this or take from face x coordinate?
         xBarycenter = new double[this.nTriangles];
         for (int i = 0; i < this.nTriangles; i++) {
             for (int p = 0; p < 3; p++) {
@@ -861,9 +863,7 @@ public class DelftDataset extends AbstractDataset {
 
         // reads the bathymetry on the faces (as the coordinates)
         Array HArrayTriangle = ncIn.findVariable(strBathyTriangle).read();
-        this.dHdx = this.compute_dzeta_dx(HArrayTriangle);
-        this.dHdy = this.compute_dzeta_dx(HArrayTriangle);
-        this.H0 = this.compute_dzeta_dx(HArrayTriangle);
+        this.edge_H = this.compute_edge_zeta(HArrayTriangle);
         this.H_triangle = new double[nTriangles];
         this.H_triangle_masked = new double[nTriangles]; //FIXME do I even need this? Taken care of in depth...
         index = HArrayTriangle.getIndex();
@@ -901,9 +901,7 @@ public class DelftDataset extends AbstractDataset {
         }
 
         // initialize the zeta arrays used for the interpolation
-        this.dzetadx = new double[this.nTriangles];
-        this.dzetady = new double[this.nTriangles];
-        this.zeta0 = new double[this.nTriangles];
+        this.edge_zeta = new double[this.nEdges];
 
     }
 
@@ -1170,7 +1168,7 @@ public class DelftDataset extends AbstractDataset {
         }
 
         try {
-            zeta_tp1 = ncIn.findVariable(strZeta).read(origin, new int[] { 1, this.nNodes }).reduce();
+            zeta_tp1 = ncIn.findVariable(strZeta).read(origin, new int[] { 1, this.nTriangles }).reduce();
         } catch (IOException | InvalidRangeException ex) {
             IOException ioex = new IOException("Error reading zeta velocity variable. " + ex.toString());
             ioex.setStackTrace(ex.getStackTrace());
@@ -1200,14 +1198,12 @@ public class DelftDataset extends AbstractDataset {
         }
 
         // Update the computation of the zeta derivatives used for interpolation
-        this.dzetadx_1 = this.compute_dzeta_dx(zeta_tp1);
-        this.dzetady_1 = this.compute_dzeta_dx(zeta_tp1);
-        this.zeta0_1 = this.compute_dzeta_dx(zeta_tp1);
+        this.edge_zeta_1 = this.compute_edge_zeta(zeta_tp1);
 
     }
 
     @Override
-    public boolean isProjected() {
+    public boolean isProjected() { // FIXME - useful?
         return true;
     }
 
@@ -1250,39 +1246,35 @@ public class DelftDataset extends AbstractDataset {
         return dt_dx;
     }
 
-    /**
-     * Compute the different variables used for the interpolation. If aw = aw0,
-     * returns T0 If aw = awx, returns dT/dX If aw = awy, returns dT/dY
-     */
-    private double[] compute_dzeta_dx(Array tracer) { //FIXME change to weighted average
+    private double[] compute_edge_zeta(Array tracer) {
 
-        double[] dt_dx = new double[this.nTriangles];
-        int[] counts = new int[this.nTriangles]; // Array to store the count of neighbors for each triangle
-        Index index = tracer.getIndex();
+        //Weighted average zeta at edge for each triangle
 
-        for (int i = 0; i < nTriangles; i++) {
-            // we loop over the neighbours, calculate dt_dx
-            for (int n = 0; n < 3; n++) {
-                int neighbour = this.triangleNodes[i][n];
-                if (neighbour >= 0) {
-                    double distance = 0.0;
-                    index.set(neighbour);
-                    distance = Math.sqrt(Math.pow(xBarycenter[neighbour] - xBarycenter[i], 2)
-                                + Math.pow(yBarycenter[neighbour] - yBarycenter[i], 2));
-                    dt_dx[i] += tracer.getDouble(index)/distance;
-                    counts[i]++; // Increment the count for this triangle
-                }
+        double[] edge_zeta = new double[this.nEdges];
+        Index index1 = tracer.getIndex();
+        Index index2 = tracer.getIndex();
+
+        for (int i = 0; i < nEdges; i++) {
+            // Read the triangle indices from the edge_face array
+            int triangle1 = edge_face[i][0]-1;
+            int triangle2 = edge_face[i][1]-1;
+
+            // On edge, just make other triangle
+            if (triangle2 == -1000) {
+                triangle2 = triangle1;
             }
+
+            double d1 = Math.sqrt(Math.pow(xBarycenter[triangle1] - xEdges[i], 2)
+                    + Math.pow(yBarycenter[triangle1] - yEdges[i], 2));
+            double d2 = Math.sqrt(Math.pow(xBarycenter[triangle2] - xEdges[i], 2)
+                    + Math.pow(yBarycenter[triangle2] - yEdges[i], 2));
+
+            index1.set(triangle1);
+            index2.set(triangle2);
+            edge_zeta[i] = (tracer.getDouble(index1) * d1 + tracer.getDouble(index2) * d2) / (d1 + d2);
         }
 
-        // Compute the average by dividing the sum by the count for each triangle
-        for (int i = 0; i < nTriangles; i++) {
-            if (counts[i] > 0) {
-                dt_dx[i] /= counts[i];
-            }
-        }
-
-        return dt_dx;
+        return edge_zeta;
     }
 
     public double[][] getTracer0(String name) {
@@ -1313,14 +1305,12 @@ public class DelftDataset extends AbstractDataset {
         return yBarycenter;
     }
 
-    private void updateTracerFields(double time) { //FIXME change to weighted average
+    private void updateTracerFields(double time) {
 
         double x_euler = (dt_HyMo - Math.abs(time_tp1 - time)) / dt_HyMo;
 
         for (int n = 0; n < this.nNodes; n++) {
-            dzetadx[n] = (1.d - x_euler) * dzetadx_0[n] + x_euler * dzetadx_1[n];
-            dzetady[n] = (1.d - x_euler) * dzetady_0[n] + x_euler * dzetady_1[n];
-            zeta0[n] = (1.d - x_euler) * zeta0_0[n] + x_euler * zeta0_1[n];
+            edge_zeta[n] = (1.d - x_euler) * edge_zeta_0[n] + x_euler * edge_zeta_1[n];
         }
 
         double[][] output = new double[this.nLayer][this.nNodes];
