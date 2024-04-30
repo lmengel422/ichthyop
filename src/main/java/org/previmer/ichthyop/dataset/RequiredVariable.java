@@ -171,13 +171,13 @@ public class RequiredVariable {
         double d3 = delft.calc_distance(pGrid,edges[2]);
 
         //Weighted average from edge
-        double output_kz = (d1 * tracer[edges[0]][kz] + d2 * tracer[edges[1]][kz] + d3 * tracer[edges[2]][kz])/(d1+d2+d3);
+        double output_kz = (d2 * d3 * tracer[edges[0]][kz] + d1 * d3 * tracer[edges[1]][kz] + d1 * d2 * tracer[edges[2]][kz])/(d2*d3+d1*d3+d1*d2);
         double output_kzp1 = 0;
 
         if (z >= 0.5 || z <= delft.getNLayer() + 0.5) {
             // if the depth of the particle is between two T layers, we recover the value
             // at the T layer which is below
-            output_kzp1 = (d1 * tracer[edges[0]][kz+1] + d2 * tracer[edges[1]][kz+1] + d3 * tracer[edges[2]][kz+1])/(d1+d2+d3);
+            output_kzp1 = (d2 * d3 * tracer[edges[0]][kz+1] + d1 * d3 * tracer[edges[1]][kz+1] + d1 * d2 * tracer[edges[2]][kz+1])/(d2*d3+d1*d3+d1*d2);
             dist = kz + 0.5 - z;
         }
 

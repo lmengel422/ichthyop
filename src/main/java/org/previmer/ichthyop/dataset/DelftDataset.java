@@ -302,8 +302,8 @@ public class DelftDataset extends AbstractDataset {
         double d3 = calc_distance(pGrid, edges[2]);
 
         // Weighted average of all the edges at kz
-        double output_0_kz = (d1 * edge_0[edges[0]][kz] + d2 * edge_0[edges[1]][kz] + d3 * edge_0[edges[2]][kz])/(d1+d2+d3);
-        double output_1_kz = (d1 * edge_1[edges[0]][kz] + d2 * edge_1[edges[1]][kz] + d3 * edge_1[edges[2]][kz])/(d1+d2+d3);
+        double output_0_kz = (d2 * d3 * edge_0[edges[0]][kz] + d1 * d3 * edge_0[edges[1]][kz] + d1 * d2 * edge_0[edges[2]][kz])/(d2*d3+d1*d3+d1*d2);
+        double output_1_kz = (d2 * d3 * edge_1[edges[0]][kz] + d1 * d3 * edge_1[edges[1]][kz] + d1 * d2 * edge_1[edges[2]][kz])/(d2*d3+d1*d3+d1*d2);
 
         // getting the value at the T-cell below the particle
 
@@ -314,8 +314,8 @@ public class DelftDataset extends AbstractDataset {
             // if the depth of the particle is between two T layers, we recover the value
             // at the T layer which is below
             // Weighted average of all the edges at kz+1
-            output_0_kzp1 = (d1 * edge_0[edges[0]][kz+1] + d2 * edge_0[edges[1]][kz+1] + d3 * edge_0[edges[2]][kz+1])/(d1+d2+d3);
-            output_1_kzp1 = (d1 * edge_1[edges[0]][kz+1] + d2 * edge_1[edges[1]][kz+1] + d3 * edge_1[edges[2]][kz+1])/(d1+d2+d3);
+            output_0_kzp1 = (d2 * d3 * edge_0[edges[0]][kz+1] + d1 * d3 * edge_0[edges[1]][kz+1] + d1 * d2 * edge_0[edges[2]][kz+1])/(d2*d3+d1*d3+d1*d2);
+            output_1_kzp1 = (d2 * d3 * edge_1[edges[0]][kz+1] + d1 * d3 * edge_1[edges[1]][kz+1] + d1 * d2 * edge_1[edges[2]][kz+1])/(d2*d3+d1*d3+d1*d2);
             dist = 1 - (z - (kz + 0.5));
         }
 
@@ -552,10 +552,10 @@ public class DelftDataset extends AbstractDataset {
         double d3 = calc_distance(pGrid,edges[2]);
 
         // Weighted average interpolation of the bathy on the given location
-        double Ht = (d1 * edge_H[edges[0]] + d2 * edge_H[edges[1]] + d3 * edge_H[edges[2]])/(d1+d2+d3);
+        double Ht = (d2 * d3 * edge_H[edges[0]] + d1 * d3 * edge_H[edges[1]] + d1 * d2 * edge_H[edges[2]])/(d2*d3+d1*d3+d1*d2);
 
         // Weighted average interpolation of zeta on the given location
-        double zetaT = (d1 * edge_zeta[edges[0]] + d2 * edge_zeta[edges[1]] + d3 * edge_zeta[edges[2]])/(d1+d2+d3);
+        double zetaT = (d2 * d3 * edge_zeta[edges[0]] + d1 * d3 * edge_zeta[edges[1]] + d1 * d2 * edge_zeta[edges[2]])/(d2*d3+d1*d3+d1*d2);
 
         // getting the sigma value
         double sig = sigma[k];
@@ -1092,7 +1092,7 @@ public class DelftDataset extends AbstractDataset {
             for (int l = 0; l < this.nLayer; l++) {
                 index1.set(triangle1, l);
                 index2.set(triangle2, l);
-                edge_u[i][l] = (u.getDouble(index1) * d1 + u.getDouble(index2) * d2) / (d1 + d2);
+                edge_u[i][l] = (u.getDouble(index1) * d2 + u.getDouble(index2) * d1) / (d2 + d1);
             }
         }
 
@@ -1203,7 +1203,7 @@ public class DelftDataset extends AbstractDataset {
 
             index1.set(triangle1);
             index2.set(triangle2);
-            edge_zeta[i] = (tracer.getDouble(index1) * d1 + tracer.getDouble(index2) * d2) / (d1 + d2);
+            edge_zeta[i] = (tracer.getDouble(index1) * d2 + tracer.getDouble(index2) * d1) / (d2 + d1);
         }
 
         return edge_zeta;
