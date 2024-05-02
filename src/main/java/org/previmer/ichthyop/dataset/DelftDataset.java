@@ -130,6 +130,7 @@ public class DelftDataset extends AbstractDataset {
     private String strYEdgeVarName;
     private String strEdgeFaceVarName;
     private int nLayer;
+    private int nLayer_sigma;
     private int indexFile;
     private float cflThreshold;
 
@@ -233,14 +234,14 @@ public class DelftDataset extends AbstractDataset {
     }
 
     @Override
-    public double depth2z(double x, double y, double depth) { //FiXME check this is working
+    public double depth2z(double x, double y, double depth) {
 
         // -----------------------------------------------
         // Return z[grid] corresponding to depth[meters]
         double z;
-        int lk = nLayer;
-        while ((lk > 0) && (getDepth(x, y, lk) < depth)) {
-            lk--;
+        int lk = nLayer_sigma-1; // index sigma layering starts (omit delta layering). Sigma layering index 26-40.
+        while ((lk < nLayer) && (getDepth(x, y, lk) < depth)) {
+            lk++;
         }
         if ((lk ==0) || (lk == nLayer)) {
             z = (double) lk;
@@ -253,7 +254,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     @Override
-    public double z2depth(double x, double y, double z) { //FIXME check this is working
+    public double z2depth(double x, double y, double z) {
 
         if(z >= nLayer) {
             return getDepth(x, y, nLayer);
@@ -853,13 +854,16 @@ public class DelftDataset extends AbstractDataset {
         Array sigArray = ncIn.findVariable(strSigma).read().reduce();
         sigma = new double[this.nLayer + 1];
         index = sigArray.getIndex();
+        int nLayer_sigma = 0;
         for (int k = 0; k < this.nLayer + 1; k++) {
             index.set(k);
             sigma[k] = sigArray.getDouble(index);
             if (Double.isNaN(sigma[k])) { //Make sigma -1 when depth below sigma layering (force depth to -150m)
                 sigma[k] = -1;
+                nLayer_sigma++;
             }
         }
+        this.nLayer_sigma = nLayer_sigma;
 
         this.cflThreshold = Float.MAX_VALUE;
         for (int i = 0; i < this.nTriangles; i++) {
