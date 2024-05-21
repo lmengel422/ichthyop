@@ -89,9 +89,6 @@ public class DelftDataset extends AbstractDataset {
     // Bathy center of the triangle
     private double[] H_triangle;
 
-    // Masked bathy center of the triangle
-    private double[] H_triangle_masked;
-
     private double lonMin, latMin;
     private double lonMax, latMax;
 
@@ -130,7 +127,6 @@ public class DelftDataset extends AbstractDataset {
     private String strYEdgeVarName;
     private String strEdgeFaceVarName;
     private int nLayer;
-    private int nLayer_sigma;
     private int indexFile;
     private float cflThreshold;
 
@@ -239,7 +235,7 @@ public class DelftDataset extends AbstractDataset {
         // -----------------------------------------------
         // Return z[grid] corresponding to depth[meters]
         double z;
-        int lk = nLayer_sigma-1; // index sigma layering starts (omit delta layering). Sigma layering index 26-40.
+        int lk = 0;
         while ((lk < nLayer) && (getDepth(x, y, lk) < depth)) {
             lk++;
         }
@@ -382,7 +378,7 @@ public class DelftDataset extends AbstractDataset {
         }
 
         double depth = z2depth(pGrid[0], pGrid[1], pGrid[2]);
-        return (depth < H_triangle[iTriangle]);
+        return (-depth < H_triangle[iTriangle]);
     }
 
     @Override
@@ -425,17 +421,6 @@ public class DelftDataset extends AbstractDataset {
             return -H_triangle[triangle];
         }
     }
-
-    public double getmaskedBathyPos(double x, double y) { //Use instead of getBathyPos when need masked bathy
-        double[] pGrid = new double[] {x, y};
-        int triangle = this.findTriangle(pGrid);
-        if(triangle < 0) {
-            return 0;
-        } else {
-            return -H_triangle_masked[triangle];
-        }
-    }
-
 
     @Override
     public int get_nx() {
@@ -560,11 +545,6 @@ public class DelftDataset extends AbstractDataset {
 
         // getting the sigma value
         double sig = sigma[k];
-
-        //mask to only do sigma layering if shallower than 150.
-        if (Ht > 150) {
-            Ht = 150;
-        }
 
         // getting the depth value
         double depth = zetaT + sig * (zetaT + Ht);
@@ -838,32 +818,22 @@ public class DelftDataset extends AbstractDataset {
         Array HArrayTriangle = ncIn.findVariable(strBathyTriangle).read();
         this.edge_H = this.compute_edge_zeta(HArrayTriangle);
         this.H_triangle = new double[nTriangles];
-        this.H_triangle_masked = new double[nTriangles]; //FIXME do I even need this? Taken care of in depth...
         index = HArrayTriangle.getIndex();
         for (int i = 0; i < this.nTriangles; i++) {
             index.set(i);
             H_triangle[i] = HArrayTriangle.getDouble(index);
-            if (H_triangle[i] > 150) { //Mask bathymetry deeper than 150 (sigma layering only for top 150m)
-                H_triangle_masked[i] = 150;
-            } else {
-                H_triangle_masked[i] = H_triangle[i];
-            }
         }
 
         // Reading of the sigma array on Z levels
         Array sigArray = ncIn.findVariable(strSigma).read().reduce();
         sigma = new double[this.nLayer + 1];
         index = sigArray.getIndex();
-        int nLayer_sigma = 0;
         for (int k = 0; k < this.nLayer + 1; k++) {
             index.set(k);
             sigma[k] = sigArray.getDouble(index);
-            if (Double.isNaN(sigma[k])) { //Make sigma -1 when depth below sigma layering (force depth to -150m)
-                sigma[k] = -1;
-                nLayer_sigma++;
-            }
         }
-        this.nLayer_sigma = nLayer_sigma;
+        //Make first value -1 (error in nc file) FIXME
+        sigma[0] = -1;
 
         this.cflThreshold = Float.MAX_VALUE;
         for (int i = 0; i < this.nTriangles; i++) {
@@ -1180,7 +1150,7 @@ public class DelftDataset extends AbstractDataset {
     }
 
     @Override
-    public boolean isProjected() { // FIXME - useful?
+    public boolean isProjected() {
         return true;
     }
 
