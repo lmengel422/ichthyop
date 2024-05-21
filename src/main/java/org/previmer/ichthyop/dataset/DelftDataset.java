@@ -1140,7 +1140,7 @@ public class DelftDataset extends AbstractDataset {
         dt_HyMo = Math.abs(time_tp1 - time_tp0);
 
         for (String name : this.getRequiredVariables().keySet()) {
-            Array tracer_raw = ncIn.findVariable(name).read(origin, new int[] { 1, this.nLayer, this.nTriangles }).reduce();
+            Array tracer_raw = ncIn.findVariable(name).read(origin, new int[] { 1, this.nTriangles, this.nLayer }).reduce();
             this.tracer_1.put(name, this.compute_edge_u(tracer_raw));
         }
 
@@ -1183,8 +1183,37 @@ public class DelftDataset extends AbstractDataset {
         return edge_zeta;
     }
 
+    private double[][] compute_edge_tracer(double[][] tracer) {
+
+        //Weighted average velocity or tracer at edge for each triangle
+
+        double[][] edge_tracer = new double[this.nEdges][this.nLayer];
+
+        for (int i = 0; i < nEdges; i++) {
+            // Read the triangle indices from the edge_face array
+            int triangle1 = edge_face[i][0]-1;
+            int triangle2 = edge_face[i][1]-1;
+
+            // On edge, just make other triangle
+            if (triangle2 == -1000) {
+                triangle2 = triangle1;
+            }
+
+            double d1 = calc_distance(new double[]{xBarycenter[triangle1], yBarycenter[triangle1]}, i);
+            double d2 = calc_distance(new double[]{xBarycenter[triangle2], yBarycenter[triangle2]}, i);
+            for (int l = 0; l < this.nLayer; l++) {
+                edge_tracer[i][l] = (tracer[triangle1][l] * d2 + tracer[triangle2][l] * d1) / (d2 + d1);
+            }
+        }
+
+        return edge_tracer;
+    }
     public double[][] getTracer0(String name) {
         return tracer.get(name);
+    }
+
+    public double[][] getTracerEdge0(String name) {
+        return compute_edge_tracer(tracer.get(name));
     }
 
     public double getXBarycenter(int iTriangle) {
@@ -1211,13 +1240,13 @@ public class DelftDataset extends AbstractDataset {
             edge_zeta[n] = (1.d - x_euler) * edge_zeta_0[n] + x_euler * edge_zeta_1[n];
         }
 
-        double[][] output = new double[this.nLayer][this.nNodes];
+        double[][] output = new double[this.nTriangles][this.nLayer];
         for (String name : this.requiredVariables.keySet()) {
             double[][] temp0 = this.tracer_0.get(name);
             double[][] temp1 = this.tracer_1.get(name);
             for (int l = 0; l < this.nLayer; l++) {
-                for (int n = 0; n < this.nNodes; n++) {
-                    output[l][n] = (1.d - x_euler) * temp0[l][n] + x_euler * temp1[l][n];
+                for (int n = 0; n < this.nTriangles; n++) {
+                    output[n][l] = (1.d - x_euler) * temp0[n][l] + x_euler * temp1[n][l];
                 }
             }
             this.tracer.put(name, output);

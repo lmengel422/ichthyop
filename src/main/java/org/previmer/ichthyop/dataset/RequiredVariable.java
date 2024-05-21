@@ -152,10 +152,11 @@ public class RequiredVariable {
 
         // getting the value at the T-cell to which the particle belongs
         double z = pGrid[2];
-        int kz = (int) Math.floor(z);
+        // getting the value at the T-cell to which the particle belongs
+        int kz = (int) Math.max(0, Math.floor(z - 0.5));
         double dist = 1;
 
-        double[][] tracer = delft.getTracer0(name);
+        double[][] tracer_edge = delft.getTracerEdge0(name);
 
         int iTriangle = delft.findTriangle(pGrid);
         if (iTriangle < 0) {
@@ -171,13 +172,13 @@ public class RequiredVariable {
         double d3 = delft.calc_distance(pGrid,edges[2]);
 
         //Weighted average from edge
-        double output_kz = (d2 * d3 * tracer[edges[0]][kz] + d1 * d3 * tracer[edges[1]][kz] + d1 * d2 * tracer[edges[2]][kz])/(d2*d3+d1*d3+d1*d2);
+        double output_kz = (d2 * d3 * tracer_edge[edges[0]][kz] + d1 * d3 * tracer_edge[edges[1]][kz] + d1 * d2 * tracer_edge[edges[2]][kz])/(d2*d3+d1*d3+d1*d2);
         double output_kzp1 = 0;
 
-        if (z >= 0.5 || z <= delft.getNLayer() + 0.5) {
+        if (z >= 0.5 && z <= delft.getNLayer() - 1 + 0.5) {
             // if the depth of the particle is between two T layers, we recover the value
             // at the T layer which is below
-            output_kzp1 = (d2 * d3 * tracer[edges[0]][kz+1] + d1 * d3 * tracer[edges[1]][kz+1] + d1 * d2 * tracer[edges[2]][kz+1])/(d2*d3+d1*d3+d1*d2);
+            output_kzp1 = (d2 * d3 * tracer_edge[edges[0]][kz+1] + d1 * d3 * tracer_edge[edges[1]][kz+1] + d1 * d2 * tracer_edge[edges[2]][kz+1])/(d2*d3+d1*d3+d1*d2);
             dist = kz + 0.5 - z;
         }
 
