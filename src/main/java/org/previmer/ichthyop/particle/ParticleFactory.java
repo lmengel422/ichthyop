@@ -61,6 +61,13 @@ public class ParticleFactory extends SimulationManagerAccessor {
 
         particle.setLon(lon);
         particle.setLat(lat);
+
+        // check whether the depth is below the local bathymetry
+        // if so, returns 0
+        if(depth <= getSimulationManager().getDataset().getBathyPos(lon, lat)) {
+            return null;
+        }
+
         particle.setDepth(depth);
         if (Double.isNaN(depth)) {
             particle.make2D();
@@ -70,9 +77,12 @@ public class ParticleFactory extends SimulationManagerAccessor {
             if (!particle.isInWater() || particle.isOnEdge()) {
                 return null;
             }
-            if (!Double.isNaN(depth)) {
-                if (getSimulationManager().getDataset().z2depth(particle.getX(), particle.getY(), 0) > depth || depth > 0) {
-                    return null;
+            if (!(getSimulationManager().getDataset() instanceof FvcomDataset)) {
+                if (!Double.isNaN(depth)) {
+                    if (getSimulationManager().getDataset().z2depth(particle.getX(), particle.getY(), 0) > depth
+                            || depth > 0) {
+                        return null;
+                    }
                 }
             }
         } else {
